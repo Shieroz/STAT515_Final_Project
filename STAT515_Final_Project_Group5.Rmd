@@ -14,12 +14,38 @@ knitr::opts_chunk$set(echo = TRUE)
 library('tidyverse')
 source('./hw.R')
 ```
-# Dataset Description
+# Dataset Overview
+
+This data set was taken from [catalog.data.gov](https://catalog.data.gov/dataset/real-estate-sales-2001-2018), in which it originated from [data.ct.gov](https://data.ct.gov/Housing-and-Development/Real-Estate-Sales-2001-2022-GL/5mzw-sjtu/about_data). 
+
+## Description
+
 The Office of Policy and Management maintains a listing of all real estate sales with a sales price of $2,000 or greater that occur between October 1 and September 30 of each year. For each sale record, the file includes: town, property address, date of sale, property type (residential, apartment, commercial, industrial or vacant land), sales price, and property assessment.
 
 Data are collected in accordance with Connecticut General Statutes, section 10-261a and 10-261b: https://www.cga.ct.gov/current/pub/chap_172.htm#sec_10-261a and https://www.cga.ct.gov/current/pub/chap_172.htm#sec_10-261b. Annual real estate sales are reported by grand list year (October 1 through September 30 each year). For instance, sales from 2018 GL are from 10/01/2018 through 9/30/2019.
 
 Some municipalities may not report data for certain years because when a municipality implements a revaluation, they are not required to submit sales data for the twelve months following implementation.
+
+## Variables explanation
+
+| Column Name   | Description   | API Field Name | Data Type |
+| --- | ------------- | --- | -- |
+| Serial Number | Serial number | serialnumber | Number |
+| List Year | Year the property was listed for sale | listyear | Number|
+| Date Recorded | Date the sale was recorded locally | daterecorded | Floating Timestamp |
+| Town | Town name | town | Text |
+| Address | Address | address | Text |
+| Assessed Value | Value of the property used for local tax assesment | assessedvalue | Number|
+| Sale Amount | Amount the property was sold for | saleamount | Number |
+| Sales Ratio | Ratio of the sale price to the assessed value | salesratio | Text |
+| Property Type | Type of property including: Residential, Commercial, Industrial, Apartments, Vacant, etc |  propertytype | Text |
+| Residential Type | Indicates whether property is single or multifamily residential | residentialtype | Text |
+| Non Use Code | Non usable sale code typically means the sale price is not reliable for use in the determination of a property value. See attachments in the dataset description page for a listing of codes | nonusecode | Text |
+| Assessor Remarks | Remarks from the assessor | remarks | Text |
+| OPM remarks | Remarks from OPM | opm_remarks | Text |
+| Location | Lat / lon coordinates | geo_coordinates | Point |
+
+# Data cleaning
 
 ```{r}
 # Import and inspect dataset
@@ -28,6 +54,42 @@ str(df)
 ```
 
 ```{r}
-
+# Count number of NAs per column
+colSums(is.na(df))
 ```
 
+We can see that some of the columns are mostly empty, and variables such as Assessor Remarks and OPM Remarks aren't likely to be important for predicting sales price without some kind of natural language processing. Thus, we'll remove them from the dataset.
+```{r}
+df_cleaned = df[ , !names(df) %in% c('Assessor.Remarks', 'OPM.remarks')]
+str(df_cleaned)
+```
+
+Sales ratio is the direct product of Sale Amount and Assessed Value, thus including this variable is meaningless since we are trying to predict Sale Amount. Serial Number is also not a useful variable since it is only an unique id of the sale.
+```{r}
+df_cleaned = df_cleaned[ , !names(df_cleaned) %in% c('Sales.Ratio', 'Serial.Number')]
+str(df_cleaned)
+```
+
+From the non-use code section, we can assume that any sale with a code is an outlier. Thus, we can safely remove them from our data set.
+```{r}
+# Remove all rows with non-NA Non.Use.Code
+df_cleaned = df_cleaned[is.na(df_cleaned$Non.Use.Code), ]
+str(df_cleaned)
+
+# Check if Non.Use.Code only contains NA
+print(paste("Does df_cleaned contain only NAs: ", all(is.na(df_cleaned$Non.Use.Code))))
+```
+
+We can now safely remove this variable.
+```{r}
+df_cleaned = df_cleaned[ , !names(df_cleaned) %in% c('Non.Use.Code')]
+str(df_cleaned)
+```
+
+As for location data, there are 3 relevant variables Town, Address and Location. However, Location is mostly empty and Address is not useful unless we convert them into larger geographical unit, which we already have with Town. Therefore it is safe to remove these 2 variables.
+```{r}
+df_cleaned = df_cleaned[ , !names(df_cleaned) %in% c('Address', 'Location')]
+str(df_cleaned)
+```
+
+Now we are ready for analysis.
