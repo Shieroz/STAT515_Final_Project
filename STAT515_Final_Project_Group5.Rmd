@@ -1,0 +1,33 @@
+---
+title: "STAT515_Final_Project"
+author: "Phong Nguyen, Cheng-hsun Hsu, Abdullah Yusaf Khan"
+date: "2025-04-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+# Importing libraries
+library('tidyverse')
+source('./hw.R')
+```
+# Dataset Description
+The Office of Policy and Management maintains a listing of all real estate sales with a sales price of $2,000 or greater that occur between October 1 and September 30 of each year. For each sale record, the file includes: town, property address, date of sale, property type (residential, apartment, commercial, industrial or vacant land), sales price, and property assessment.
+
+Data are collected in accordance with Connecticut General Statutes, section 10-261a and 10-261b: https://www.cga.ct.gov/current/pub/chap_172.htm#sec_10-261a and https://www.cga.ct.gov/current/pub/chap_172.htm#sec_10-261b. Annual real estate sales are reported by grand list year (October 1 through September 30 each year). For instance, sales from 2018 GL are from 10/01/2018 through 9/30/2019.
+
+Some municipalities may not report data for certain years because when a municipality implements a revaluation, they are not required to submit sales data for the twelve months following implementation.
+
+```{r}
+# Import and inspect dataset
+df = read.csv('./Real_Estate_Sales_2001-2022_GL.csv', na.strings=c("", "NA", "."))
+str(df)
+```
+
+```{r}
+
+```
+
