@@ -45,6 +45,10 @@ Some municipalities may not report data for certain years because when a municip
 | OPM remarks | Remarks from OPM | opm_remarks | Text |
 | Location | Lat / lon coordinates | geo_coordinates | Point |
 
+# Hypothesis
+
+
+
 # Data cleaning
 
 ```{r}
@@ -90,6 +94,9 @@ As for location data, there are 3 relevant variables Town, Address and Location.
 ```{r}
 df_cleaned = df_cleaned[ , !names(df_cleaned) %in% c('Address', 'Location')]
 str(df_cleaned)
+colSums(is.na(df_cleaned))
 ```
 
 Now we are ready for analysis.
+
+# 
