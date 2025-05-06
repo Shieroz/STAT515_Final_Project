@@ -359,254 +359,286 @@ Khan</h4>
 
 
 <pre class="r"><code># Importing libraries
-library(&#39;tidyverse&#39;)
-source(&#39;./hw.R&#39;)</code></pre>
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(randomForest)</code></pre>
 <div id="dataset-overview" class="section level1">
 <h1>Dataset Overview</h1>
-<p>This data set was taken from <a href="https://catalog.data.gov/dataset/real-estate-sales-2001-2018">catalog.data.gov</a>,
-in which it originated from <a href="https://data.ct.gov/Housing-and-Development/Real-Estate-Sales-2001-2022-GL/5mzw-sjtu/about_data">data.ct.gov</a>.</p>
+<p>This data set was taken from <a href="https://www.openintro.org/data/index.php?data=loans_full_schema">Loan
+data from Lending Club</a>, taken from OpenIntro. It has 55 variables
+and 10000 observations.</p>
 <div id="description" class="section level2">
 <h2>Description</h2>
-<p>The Office of Policy and Management maintains a listing of all real
-estate sales with a sales price of $2,000 or greater that occur between
-October 1 and September 30 of each year. For each sale record, the file
-includes: town, property address, date of sale, property type
-(residential, apartment, commercial, industrial or vacant land), sales
-price, and property assessment.</p>
-<p>Data are collected in accordance with Connecticut General Statutes,
-section 10-261a and 10-261b: <a href="https://www.cga.ct.gov/current/pub/chap_172.htm#sec_10-261a" class="uri">https://www.cga.ct.gov/current/pub/chap_172.htm#sec_10-261a</a>
-and <a href="https://www.cga.ct.gov/current/pub/chap_172.htm#sec_10-261b" class="uri">https://www.cga.ct.gov/current/pub/chap_172.htm#sec_10-261b</a>.
-Annual real estate sales are reported by grand list year (October 1
-through September 30 each year). For instance, sales from 2018 GL are
-from 10/01/2018 through 9/30/2019.</p>
-<p>Some municipalities may not report data for certain years because
-when a municipality implements a revaluation, they are not required to
-submit sales data for the twelve months following implementation.</p>
+<p>This data set represents thousands of loans made through the Lending
+Club platform, which is a platform that allows individuals to lend to
+other individuals. Of course, not all loans are created equal. Someone
+who is a essentially a sure bet to pay back a loan will have an easier
+time getting a loan with a low interest rate than someone who appears to
+be riskier. And for people who are very risky? They may not even get a
+loan offer, or they may not have accepted the loan offer due to a high
+interest rate. It is important to keep that last part in mind, since
+this data set only represents loans actually made, i.e. do not mistake
+this data for loan applications!</p>
 </div>
 <div id="variables-explanation" class="section level2">
 <h2>Variables explanation</h2>
-<table style="width:100%;">
+<table>
 <colgroup>
-<col width="14%" />
-<col width="61%" />
-<col width="14%" />
-<col width="9%" />
+<col width="16%" />
+<col width="83%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th>Column Name</th>
-<th>Description</th>
-<th>API Field Name</th>
-<th>Data Type</th>
+<th>Variable name</th>
+<th>Variable</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Serial Number</td>
-<td>Serial number</td>
-<td>serialnumber</td>
-<td>Number</td>
+<td>emp_title</td>
+<td>Job title</td>
 </tr>
 <tr class="even">
-<td>List Year</td>
-<td>Year the property was listed for sale</td>
-<td>listyear</td>
-<td>Number</td>
+<td>emp_length</td>
+<td>Number of years in the job, rounded down. If longer than 10 years,
+then this is represented by the value 10</td>
 </tr>
 <tr class="odd">
-<td>Date Recorded</td>
-<td>Date the sale was recorded locally</td>
-<td>daterecorded</td>
-<td>Floating Timestamp</td>
+<td>state</td>
+<td>Two-letter state code</td>
 </tr>
 <tr class="even">
-<td>Town</td>
-<td>Town name</td>
-<td>town</td>
-<td>Text</td>
+<td>homeownership</td>
+<td>The ownership status of the applicant’s residence</td>
 </tr>
 <tr class="odd">
-<td>Address</td>
-<td>Address</td>
-<td>address</td>
-<td>Text</td>
+<td>annual_income</td>
+<td>Annual income</td>
 </tr>
 <tr class="even">
-<td>Assessed Value</td>
-<td>Value of the property used for local tax assesment</td>
-<td>assessedvalue</td>
-<td>Number</td>
+<td>verified_income</td>
+<td>Type of verification of the applicant’s income</td>
 </tr>
 <tr class="odd">
-<td>Sale Amount</td>
-<td>Amount the property was sold for</td>
-<td>saleamount</td>
-<td>Number</td>
+<td>debt_to_income</td>
+<td>Debt-to-income ratio</td>
 </tr>
 <tr class="even">
-<td>Sales Ratio</td>
-<td>Ratio of the sale price to the assessed value</td>
-<td>salesratio</td>
-<td>Text</td>
+<td>annual_income_joint</td>
+<td>If this is a joint application, then the annual income of the two
+parties applying</td>
 </tr>
 <tr class="odd">
-<td>Property Type</td>
-<td>Type of property including: Residential, Commercial, Industrial,
-Apartments, Vacant, etc</td>
-<td>propertytype</td>
-<td>Text</td>
+<td>verification_income_joint</td>
+<td>Type of verification of the joint income</td>
 </tr>
 <tr class="even">
-<td>Residential Type</td>
-<td>Indicates whether property is single or multifamily residential</td>
-<td>residentialtype</td>
-<td>Text</td>
+<td>debt_to_income_joint</td>
+<td>Debt-to-income ratio for the two parties</td>
 </tr>
 <tr class="odd">
-<td>Non Use Code</td>
-<td>Non usable sale code typically means the sale price is not reliable
-for use in the determination of a property value. See attachments in the
-dataset description page for a listing of codes</td>
-<td>nonusecode</td>
-<td>Text</td>
+<td>delinq_2y</td>
+<td>Delinquencies on lines of credit in the last 2 years</td>
 </tr>
 <tr class="even">
-<td>Assessor Remarks</td>
-<td>Remarks from the assessor</td>
-<td>remarks</td>
-<td>Text</td>
+<td>months_since_last_delinq</td>
+<td>Months since the last delinquency</td>
 </tr>
 <tr class="odd">
-<td>OPM remarks</td>
-<td>Remarks from OPM</td>
-<td>opm_remarks</td>
-<td>Text</td>
+<td>earliest_credit_line</td>
+<td>Year of the applicant’s earliest line of credit</td>
 </tr>
 <tr class="even">
-<td>Location</td>
-<td>Lat / lon coordinates</td>
-<td>geo_coordinates</td>
-<td>Point</td>
+<td>inquiries_last_12m</td>
+<td>Inquiries into the applicant’s credit during the last 12 months</td>
+</tr>
+<tr class="odd">
+<td>total_credit_lines</td>
+<td>Total number of credit lines in this applicant’s credit history</td>
+</tr>
+<tr class="even">
+<td>open_credit_lines</td>
+<td>Number of currently open lines of credit</td>
+</tr>
+<tr class="odd">
+<td>total_credit_limit</td>
+<td>Total available credit, e.g. if only credit cards, then the total of
+all the credit limits. This excludes a mortgage</td>
+</tr>
+<tr class="even">
+<td>total_credit_utilized</td>
+<td>Total credit balance, excluding a mortgage</td>
+</tr>
+<tr class="odd">
+<td>num_collections_last_12m</td>
+<td>Number of collections in the last 12 months. This excludes medical
+collections</td>
+</tr>
+<tr class="even">
+<td>num_historical_failed_to_pay</td>
+<td>The number of derogatory public records, which roughly means the
+number of times the applicant failed to pay</td>
+</tr>
+<tr class="odd">
+<td>months_since_90d_late</td>
+<td>Months since the last time the applicant was 90 days late on a
+payment</td>
+</tr>
+<tr class="even">
+<td>current_accounts_delinq</td>
+<td>Number of accounts where the applicant is currently delinquent</td>
+</tr>
+<tr class="odd">
+<td>total_collection_amount_ever</td>
+<td>The total amount that the applicant has had against them in
+collections</td>
+</tr>
+<tr class="even">
+<td>current_installment_accounts</td>
+<td>Number of installment accounts, which are (roughly) accounts with a
+fixed payment amount and period. A typical example might be a 36-month
+car loan</td>
+</tr>
+<tr class="odd">
+<td>accounts_opened_24m</td>
+<td>Number of new lines of credit opened in the last 24 months</td>
+</tr>
+<tr class="even">
+<td>months_since_last_credit_inquiry</td>
+<td>Number of months since the last credit inquiry on this
+applicant</td>
+</tr>
+<tr class="odd">
+<td>num_satisfactory_accounts</td>
+<td>Number of satisfactory accounts</td>
+</tr>
+<tr class="even">
+<td>num_accounts_120d_past_due</td>
+<td>Number of current accounts that are 120 days past due</td>
+</tr>
+<tr class="odd">
+<td>num_accounts_30d_past_due</td>
+<td>Number of current accounts that are 30 days past due</td>
+</tr>
+<tr class="even">
+<td>num_active_debit_accounts</td>
+<td>Number of currently active bank cards</td>
+</tr>
+<tr class="odd">
+<td>total_debit_limit</td>
+<td>Total of all bank card limits</td>
+</tr>
+<tr class="even">
+<td>num_total_cc_accounts</td>
+<td>Total number of credit card accounts in the applicant’s history</td>
+</tr>
+<tr class="odd">
+<td>num_open_cc_accounts</td>
+<td>Total number of currently open credit card accounts</td>
+</tr>
+<tr class="even">
+<td>num_cc_carrying_balance</td>
+<td>Number of credit cards that are carrying a balance</td>
+</tr>
+<tr class="odd">
+<td>num_mort_accounts</td>
+<td>Number of mortgage accounts</td>
+</tr>
+<tr class="even">
+<td>account_never_delinq_percent</td>
+<td>Percent of all lines of credit where the applicant was never
+delinquent</td>
+</tr>
+<tr class="odd">
+<td>tax_liens</td>
+<td>a numeric vector</td>
+</tr>
+<tr class="even">
+<td>public_record_bankrupt</td>
+<td>Number of bankruptcies listed in the public record for this
+applicant</td>
+</tr>
+<tr class="odd">
+<td>loan_purpose</td>
+<td>The category for the purpose of the loan</td>
+</tr>
+<tr class="even">
+<td>application_type</td>
+<td>The type of application: either individual or joint</td>
+</tr>
+<tr class="odd">
+<td>loan_amount</td>
+<td>The amount of the loan the applicant received</td>
+</tr>
+<tr class="even">
+<td>term</td>
+<td>The number of months of the loan the applicant received</td>
+</tr>
+<tr class="odd">
+<td>interest_rate</td>
+<td>Interest rate of the loan the applicant received</td>
+</tr>
+<tr class="even">
+<td>installment</td>
+<td>Monthly payment for the loan the applicant received</td>
+</tr>
+<tr class="odd">
+<td>grade</td>
+<td>Grade associated with the loan</td>
+</tr>
+<tr class="even">
+<td>sub_grade</td>
+<td>Detailed grade associated with the loan</td>
+</tr>
+<tr class="odd">
+<td>issue_month</td>
+<td>Month the loan was issued</td>
+</tr>
+<tr class="even">
+<td>loan_status</td>
+<td>Status of the loan</td>
+</tr>
+<tr class="odd">
+<td>initial_listing_status</td>
+<td>Initial listing status of the loan. (has to do with whether the
+lender provided the entire loan or if the loan is across multiple
+lenders)</td>
+</tr>
+<tr class="even">
+<td>disbursement_method</td>
+<td>Dispersement method of the loan</td>
+</tr>
+<tr class="odd">
+<td>balance</td>
+<td>Current balance on the loan</td>
+</tr>
+<tr class="even">
+<td>paid_total</td>
+<td>Total that has been paid on the loan by the applicant</td>
+</tr>
+<tr class="odd">
+<td>paid_principal</td>
+<td>The difference between the original loan amount and the current
+balance on the loan</td>
+</tr>
+<tr class="even">
+<td>paid_interest</td>
+<td>The amount of interest paid so far by the applicant</td>
+</tr>
+<tr class="odd">
+<td>paid_late_fees</td>
+<td>Late fees paid by the applicant</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
+<div id="hypothesis" class="section level1">
+<h1>Hypothesis</h1>
+</div>
 <div id="data-cleaning" class="section level1">
 <h1>Data cleaning</h1>
-<pre class="r"><code># Import and inspect dataset
-df = read.csv(&#39;./Real_Estate_Sales_2001-2022_GL.csv&#39;, na.strings=c(&quot;&quot;, &quot;NA&quot;, &quot;.&quot;))
-str(df)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    1097629 obs. of  14 variables:
-##  $ Serial.Number   : int  2020177 2020225 2020348 2020090 200500 200121 20058 200046 200016 2020360 ...
-##  $ List.Year       : int  2020 2020 2020 2020 2020 2020 2020 2020 2020 2020 ...
-##  $ Date.Recorded   : chr  &quot;04/14/2021&quot; &quot;05/26/2021&quot; &quot;09/13/2021&quot; &quot;12/14/2020&quot; ...
-##  $ Town            : chr  &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; ...
-##  $ Address         : chr  &quot;323 BEAVER ST&quot; &quot;152 JACKSON ST&quot; &quot;230 WAKELEE AVE&quot; &quot;57 PLATT ST&quot; ...
-##  $ Assessed.Value  : num  133000 110500 150500 127400 217640 ...
-##  $ Sale.Amount     : num  248400 239900 325000 202500 400000 ...
-##  $ Sales.Ratio     : num  0.535 0.461 0.463 0.629 0.544 ...
-##  $ Property.Type   : chr  &quot;Residential&quot; &quot;Residential&quot; &quot;Commercial&quot; &quot;Residential&quot; ...
-##  $ Residential.Type: chr  &quot;Single Family&quot; &quot;Three Family&quot; NA &quot;Two Family&quot; ...
-##  $ Non.Use.Code    : chr  NA NA NA NA ...
-##  $ Assessor.Remarks: chr  NA NA NA NA ...
-##  $ OPM.remarks     : chr  NA NA NA NA ...
-##  $ Location        : chr  &quot;POINT (-73.06822 41.35014)&quot; NA NA NA ...</code></pre>
-<pre class="r"><code># Count number of NAs per column
-colSums(is.na(df))</code></pre>
-<pre><code>##    Serial.Number        List.Year    Date.Recorded             Town 
-##                0                0                2                0 
-##          Address   Assessed.Value      Sale.Amount      Sales.Ratio 
-##               51                0                0                0 
-##    Property.Type Residential.Type     Non.Use.Code Assessor.Remarks 
-##           382446           398389           784178           926400 
-##      OPM.remarks         Location 
-##          1084598           799518</code></pre>
-<p>We can see that some of the columns are mostly empty, and variables
-such as Assessor Remarks and OPM Remarks aren’t likely to be important
-for predicting sales price without some kind of natural language
-processing. Thus, we’ll remove them from the dataset.</p>
-<pre class="r"><code>df_cleaned = df[ , !names(df) %in% c(&#39;Assessor.Remarks&#39;, &#39;OPM.remarks&#39;)]
-str(df_cleaned)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    1097629 obs. of  12 variables:
-##  $ Serial.Number   : int  2020177 2020225 2020348 2020090 200500 200121 20058 200046 200016 2020360 ...
-##  $ List.Year       : int  2020 2020 2020 2020 2020 2020 2020 2020 2020 2020 ...
-##  $ Date.Recorded   : chr  &quot;04/14/2021&quot; &quot;05/26/2021&quot; &quot;09/13/2021&quot; &quot;12/14/2020&quot; ...
-##  $ Town            : chr  &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; ...
-##  $ Address         : chr  &quot;323 BEAVER ST&quot; &quot;152 JACKSON ST&quot; &quot;230 WAKELEE AVE&quot; &quot;57 PLATT ST&quot; ...
-##  $ Assessed.Value  : num  133000 110500 150500 127400 217640 ...
-##  $ Sale.Amount     : num  248400 239900 325000 202500 400000 ...
-##  $ Sales.Ratio     : num  0.535 0.461 0.463 0.629 0.544 ...
-##  $ Property.Type   : chr  &quot;Residential&quot; &quot;Residential&quot; &quot;Commercial&quot; &quot;Residential&quot; ...
-##  $ Residential.Type: chr  &quot;Single Family&quot; &quot;Three Family&quot; NA &quot;Two Family&quot; ...
-##  $ Non.Use.Code    : chr  NA NA NA NA ...
-##  $ Location        : chr  &quot;POINT (-73.06822 41.35014)&quot; NA NA NA ...</code></pre>
-<p>Sales ratio is the direct product of Sale Amount and Assessed Value,
-thus including this variable is meaningless since we are trying to
-predict Sale Amount. Serial Number is also not a useful variable since
-it is only an unique id of the sale.</p>
-<pre class="r"><code>df_cleaned = df_cleaned[ , !names(df_cleaned) %in% c(&#39;Sales.Ratio&#39;, &#39;Serial.Number&#39;)]
-str(df_cleaned)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    1097629 obs. of  10 variables:
-##  $ List.Year       : int  2020 2020 2020 2020 2020 2020 2020 2020 2020 2020 ...
-##  $ Date.Recorded   : chr  &quot;04/14/2021&quot; &quot;05/26/2021&quot; &quot;09/13/2021&quot; &quot;12/14/2020&quot; ...
-##  $ Town            : chr  &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; ...
-##  $ Address         : chr  &quot;323 BEAVER ST&quot; &quot;152 JACKSON ST&quot; &quot;230 WAKELEE AVE&quot; &quot;57 PLATT ST&quot; ...
-##  $ Assessed.Value  : num  133000 110500 150500 127400 217640 ...
-##  $ Sale.Amount     : num  248400 239900 325000 202500 400000 ...
-##  $ Property.Type   : chr  &quot;Residential&quot; &quot;Residential&quot; &quot;Commercial&quot; &quot;Residential&quot; ...
-##  $ Residential.Type: chr  &quot;Single Family&quot; &quot;Three Family&quot; NA &quot;Two Family&quot; ...
-##  $ Non.Use.Code    : chr  NA NA NA NA ...
-##  $ Location        : chr  &quot;POINT (-73.06822 41.35014)&quot; NA NA NA ...</code></pre>
-<p>From the non-use code section, we can assume that any sale with a
-code is an outlier. Thus, we can safely remove them from our data
-set.</p>
-<pre class="r"><code># Remove all rows with non-NA Non.Use.Code
-df_cleaned = df_cleaned[is.na(df_cleaned$Non.Use.Code), ]
-str(df_cleaned)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    784178 obs. of  10 variables:
-##  $ List.Year       : int  2020 2020 2020 2020 2020 2020 2020 2020 2020 2020 ...
-##  $ Date.Recorded   : chr  &quot;04/14/2021&quot; &quot;05/26/2021&quot; &quot;09/13/2021&quot; &quot;12/14/2020&quot; ...
-##  $ Town            : chr  &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; ...
-##  $ Address         : chr  &quot;323 BEAVER ST&quot; &quot;152 JACKSON ST&quot; &quot;230 WAKELEE AVE&quot; &quot;57 PLATT ST&quot; ...
-##  $ Assessed.Value  : num  133000 110500 150500 127400 217640 ...
-##  $ Sale.Amount     : num  248400 239900 325000 202500 400000 ...
-##  $ Property.Type   : chr  &quot;Residential&quot; &quot;Residential&quot; &quot;Commercial&quot; &quot;Residential&quot; ...
-##  $ Residential.Type: chr  &quot;Single Family&quot; &quot;Three Family&quot; NA &quot;Two Family&quot; ...
-##  $ Non.Use.Code    : chr  NA NA NA NA ...
-##  $ Location        : chr  &quot;POINT (-73.06822 41.35014)&quot; NA NA NA ...</code></pre>
-<pre class="r"><code># Check if Non.Use.Code only contains NA
-print(paste(&quot;Does df_cleaned contain only NAs: &quot;, all(is.na(df_cleaned$Non.Use.Code))))</code></pre>
-<pre><code>## [1] &quot;Does df_cleaned contain only NAs:  TRUE&quot;</code></pre>
-<p>We can now safely remove this variable.</p>
-<pre class="r"><code>df_cleaned = df_cleaned[ , !names(df_cleaned) %in% c(&#39;Non.Use.Code&#39;)]
-str(df_cleaned)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    784178 obs. of  9 variables:
-##  $ List.Year       : int  2020 2020 2020 2020 2020 2020 2020 2020 2020 2020 ...
-##  $ Date.Recorded   : chr  &quot;04/14/2021&quot; &quot;05/26/2021&quot; &quot;09/13/2021&quot; &quot;12/14/2020&quot; ...
-##  $ Town            : chr  &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; ...
-##  $ Address         : chr  &quot;323 BEAVER ST&quot; &quot;152 JACKSON ST&quot; &quot;230 WAKELEE AVE&quot; &quot;57 PLATT ST&quot; ...
-##  $ Assessed.Value  : num  133000 110500 150500 127400 217640 ...
-##  $ Sale.Amount     : num  248400 239900 325000 202500 400000 ...
-##  $ Property.Type   : chr  &quot;Residential&quot; &quot;Residential&quot; &quot;Commercial&quot; &quot;Residential&quot; ...
-##  $ Residential.Type: chr  &quot;Single Family&quot; &quot;Three Family&quot; NA &quot;Two Family&quot; ...
-##  $ Location        : chr  &quot;POINT (-73.06822 41.35014)&quot; NA NA NA ...</code></pre>
-<p>As for location data, there are 3 relevant variables Town, Address
-and Location. However, Location is mostly empty and Address is not
-useful unless we convert them into larger geographical unit, which we
-already have with Town. Therefore it is safe to remove these 2
-variables.</p>
-<pre class="r"><code>df_cleaned = df_cleaned[ , !names(df_cleaned) %in% c(&#39;Address&#39;, &#39;Location&#39;)]
-str(df_cleaned)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    784178 obs. of  7 variables:
-##  $ List.Year       : int  2020 2020 2020 2020 2020 2020 2020 2020 2020 2020 ...
-##  $ Date.Recorded   : chr  &quot;04/14/2021&quot; &quot;05/26/2021&quot; &quot;09/13/2021&quot; &quot;12/14/2020&quot; ...
-##  $ Town            : chr  &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; &quot;Ansonia&quot; ...
-##  $ Assessed.Value  : num  133000 110500 150500 127400 217640 ...
-##  $ Sale.Amount     : num  248400 239900 325000 202500 400000 ...
-##  $ Property.Type   : chr  &quot;Residential&quot; &quot;Residential&quot; &quot;Commercial&quot; &quot;Residential&quot; ...
-##  $ Residential.Type: chr  &quot;Single Family&quot; &quot;Three Family&quot; NA &quot;Two Family&quot; ...</code></pre>
-<p>Now we are ready for analysis.</p>
 </div>
 
 

@@ -50,3 +50,10 @@ rsconnect/
 
 # Dataset files
 *.csv
+
+# Python files
+*.py
+*.ipynb
+
+# Columns file
+columns.*

@@ -4,7 +4,7 @@ source('./hw.R')
 library(dplyr)
 library(randomForest)
 
-load('./Loans Full Schema.rda')
+load('./loans_full_schema.rda')
 
 df <- loans_full_schema
 df[df == ""] <- NA
