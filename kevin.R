@@ -3,6 +3,7 @@ library(ggplot2)
 library(dplyr)
 library(randomForest)
 library(tidyr)
+library(car)
 library(caret)
 
 load('./loans_full_schema.rda')
@@ -35,6 +36,7 @@ replace_debt_income <- mean(na.omit(df_cleaned$debt_to_income)) # mean: 17.43, m
 df_cleaned$debt_to_income[is.na(df_cleaned$debt_to_income)] <- replace_debt_income
 df_cleaned <- na.omit(df_cleaned)
 
+df_cleaned$grade <- factor(df_cleaned$grade, levels = c("A", "B", "C", "D", "E", "F", "G"), ordered=TRUE)
 # See the outlier
 num_cols <- sapply(df_cleaned, is.numeric)
 df_num   <- df_cleaned[ , num_cols]
@@ -49,10 +51,27 @@ outliers_list <- lapply(df_num, function(x) boxplot.stats(x)$out)
 ## Question 1: With different home-ownership is the income have significant different? 
 
 ### Check whether variables are normal distribution
+df_cleaned <- df_cleaned[df_cleaned$homeownership != "ANY", ]
 anova_result <- aov(annual_income ~ homeownership, data = df_cleaned)
 qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
 
+
+resid_df <- data.frame(
+  resid = residuals(anova_result),
+  group = df_cleaned$homeownership
+)
+
+boxplot(resid ~ group, data = resid_df,
+        main = "Residuals by Group",
+        ylab = "Residuals")
+
+
 # Try transform the data and try again
+
+df_cleaned <- df_cleaned %>%
+  filter(homeownership != "ANY") %>%
+  droplevels()
+
 anova_trans <- df_cleaned
 anova_trans$annual_income_log <- log(anova_trans$annual_income + 1)
 anova_trans$annual_income_sqrt <- sqrt(anova_trans$annual_income)
@@ -72,13 +91,44 @@ df_cleaned <- df_cleaned[df_cleaned$homeownership != "ANY", ]
 kw <- kruskal.test(annual_income ~ homeownership, data = df_cleaned)
 print(kw)
 
+
 boxplot(annual_income ~ homeownership, data = df_cleaned,
         main = "Boxplot of Response by Group",
         xlab = "Group", ylab = "Response")
 
+ggplot(df, aes(x = annual_income, color = homeownership, fill = homeownership)) +
+  geom_density(alpha = 0.3) +
+  labs(title = "Density of annual_income by homeownership",
+       x = "annual_income", y = "Density")
+
 # Interpretation: ANOVA result indicated that there are significant difference between the mean of the homeownership group. We use tukey to see which pairs of group are different. 
 #   The result showed that the mean of annual_income in Mortgage have significant difference compared to others two group.
 #   However, people who rent the houses and own houses didn't have significant difference in the confidence level of mean in annual_income cause it cross the 0 in xline. 
+
+
+
+
+
+## Question 2: Do different loan_purpose categories have significantly different average interest_rates, even after controlling for borrower risk profiles (e.g., grade)?
+# H0: All purpose‐group means are equal after adjusting for grade.
+# H1: All purpose‐group means are not equal after adjusting for grade.
+
+# ANCOVA assumes the relationship between the covariate (grade) and outcome is the same in every group.
+mod_int <- lm(interest_rate ~ loan_purpose * grade, data = df_cleaned)
+anova(mod_int)
+# Since the loan_purpose:grade interaction isn’t significant the homogeneity of slopes assumption holds
+
+# 2. Fit ANCOVA without interaction
+mod_ancova <- lm(interest_rate ~ grade + loan_purpose, data = df_cleaned)
+Anova(mod_ancova, type = "III")
+summary(mod_ancova)
+
+
+par(mfrow = c(2,2))
+plot(mod_ancova)  
+
+
+
 
 
 

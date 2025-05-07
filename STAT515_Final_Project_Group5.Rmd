@@ -120,7 +120,6 @@ ggplot(df_cleaned, aes(x = debt_to_income)) +
 replace_debt_income <- mean(na.omit(df_cleaned$debt_to_income)) # mean: 17.43, median: 18.32
 df_cleaned$debt_to_income[is.na(df_cleaned$debt_to_income)] <- replace_debt_income
 df_cleaned <- na.omit(df_cleaned)
-
 df_cleaned$state <- as.factor(df_cleaned$state)
 df_cleaned$application_type <- as.factor(df_cleaned$application_type)
 df_cleaned$homeownership <- as.factor(df_cleaned$homeownership)
@@ -129,6 +128,7 @@ df_cleaned$loan_status <- as.factor(df_cleaned$loan_status)
 df_cleaned$disbursement_method <- as.factor(df_cleaned$disbursement_method)
 df_cleaned$initial_listing_status <- as.factor(df_cleaned$initial_listing_status)
 df_cleaned$verified_income <- as.factor(df_cleaned$verified_income)
+df_cleaned$grade <- factor(df_cleaned$grade, levels = c("A", "B", "C", "D", "E", "F", "G"), ordered=TRUE)
 
 # Check outlier
 num_cols <- sapply(df_cleaned, is.numeric)
@@ -145,6 +145,10 @@ outliers_list <- lapply(df_num, function(x) boxplot.stats(x)$out)
 ### Using One-way ANOVA (failed)
 ### Reason: The residual didn't follow the normal distribution
 ```{r}
+df_cleaned <- df_cleaned[df_cleaned$homeownership != "ANY", ]
+df_cleaned <- df_cleaned %>%
+  filter(homeownership != "ANY") %>%
+  droplevels()
 anova_result <- aov(annual_income ~ homeownership, data = df_cleaned)
 qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
 # Try transform the data and try again
@@ -164,7 +168,8 @@ qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
 table(df_cleaned$homeownership)
 
 # Since no values for 'ANY' we remove it.
-df_cleaned <- df_cleaned[df_cleaned$homeownership != "ANY", ]
+# Using Kruskal–Wallis test (nonparametric): Compares group medians by ranking all data, then testing whether rank-sums differ more than expected by chance.
+
 kw <- kruskal.test(annual_income ~ homeownership, data = df_cleaned)
 print(kw)
 # Assumption:
@@ -176,12 +181,18 @@ boxplot(annual_income ~ homeownership, data = df_cleaned,
         main = "Boxplot of Response by Group",
         xlab = "Group", ylab = "Response")
 
+ggplot(df, aes(x = annual_income, color = homeownership, fill = homeownership)) +
+  geom_density(alpha = 0.3) +
+  labs(title = "Density of annual_income by homeownership",
+       x = "annual_income", y = "Density")
+
 # By using two plots we can indicate each group have the same-shaped distributions, 
 # so that differences in ranks reflect shifts in location (medians) only.
 ```
 
 ### Interpretation: Becasue the residuals didn't follow normalityu so we can't use the result from ANOVA. 
 ### We choose to use  nonparametric Kruskal–Wallis. By using two plots we can said that the group have the same shape of distribution
+
 
 
 # Question 2: Did the people with verified income have lower interest_rate
