@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
+library(caret)
 library(randomForest)
 ```
 # Dataset Overview
@@ -119,6 +120,15 @@ ggplot(df_cleaned, aes(x = debt_to_income)) +
 replace_debt_income <- mean(na.omit(df_cleaned$debt_to_income)) # mean: 17.43, median: 18.32
 df_cleaned$debt_to_income[is.na(df_cleaned$debt_to_income)] <- replace_debt_income
 df_cleaned <- na.omit(df_cleaned)
+
+df_cleaned$state <- as.factor(df_cleaned$state)
+df_cleaned$application_type <- as.factor(df_cleaned$application_type)
+df_cleaned$homeownership <- as.factor(df_cleaned$homeownership)
+df_cleaned$loan_purpose <- as.factor(df_cleaned$loan_purpose)
+df_cleaned$loan_status <- as.factor(df_cleaned$loan_status)
+df_cleaned$disbursement_method <- as.factor(df_cleaned$disbursement_method)
+df_cleaned$initial_listing_status <- as.factor(df_cleaned$initial_listing_status)
+df_cleaned$verified_income <- as.factor(df_cleaned$verified_income)
 ```
 
 
@@ -147,5 +157,41 @@ tukey_result <- TukeyHSD(anova_result)
 par(mar = c(4, 9.5, 2, 2)) # bottom, left, top, right
 plot(tukey_result, las = 1, cex.axis = 0.8)
 abline(v = 0, col = "red", lwd = 2, lty = "dashed")
+```
+
+### Interpretation: ANOVA result 
+
+
+# Question 3: Predict Grade by Random Forest (To be continue)
+```{r}
+df_cleaned$grade <- droplevels(df_cleaned$grade) # Remove the unused target level
+rf_data <- df_cleaned
+# removing columns
+rf_data <- rf_data %>% select(-sub_grade, -issue_month)
+rf_model <- randomForest(grade ~ ., data = rf_data, importance = TRUE)
+importance(rf_model)
+```
+
+```{r}
+# Choose the importance variables
+ctrl <- rfeControl(functions = rfFuncs, method = "cv", number = 5)
+# sizes = the candidate subset sizes you want to try
+rfe_res <- rfe(
+  x          = rf_data[, setdiff(names(rf_data), "grade")],
+  y          = rf_data$grade,
+  sizes      = c(5, 10, 15, 20),
+  rfeControl = ctrl
+)
+# best variables
+predictors(rfe_res)
+# re-fit on those
+rf_rfe <- randomForest(grade ~ ., data = rf_data[, c(predictors(rfe_res), "grade")])
+```
+
+
+### Compare original model and variable selct model
+```{r}
+print(rf_model)
+print(rf_rfe)
 ```
 
