@@ -214,12 +214,14 @@ test_data  <- rf_data[-train_index, ]
 
 rf_model <- randomForest(grade ~ ., data = train_data, importance = TRUE)
 importance(rf_model)
+pred <- predict(rf_model, newdata = test_data[, predictors(rf_model)])
+confusionMatrix(pred, test_data$grade)
 ```
 
 ```{r}
 ctrl <- rfeControl(functions = rfFuncs, method = "cv", number = 5)
 
-# We first test 4, 10, 15, 20. 5 perform best then we narrow the range to 5-9
+# We first test 5, 10, 15, 20. 5 perform best then we narrow the range to 5-9
 rfe_res <- rfe(
   x          = train_data[, setdiff(names(train_data), "grade")],
   y          = train_data$grade,

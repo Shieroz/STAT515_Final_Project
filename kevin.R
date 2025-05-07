@@ -2,6 +2,7 @@ library('tidyverse')
 library(ggplot2)
 library(dplyr)
 library(randomForest)
+library(FSA)
 library(tidyr)
 library(tree)
 library(glmnet)
@@ -9,7 +10,7 @@ library(WRS2)
 library(car)
 library(caret)
 
-load('./loans_full_schema.rda')
+load("~/Downloads/STAT515_Final_Project/loans_full_schema.rda")
 
 df <- loans_full_schema
 df[df == ""] <- NA
@@ -92,8 +93,10 @@ table(df_cleaned$homeownership)
 df_cleaned <- df_cleaned[df_cleaned$homeownership != "ANY", ]
 
 kw <- kruskal.test(annual_income ~ homeownership, data = df_cleaned)
-print(kw)
+print(kw)      # if needed
 
+dunnTest(annual_income ~ homeownership, data = df_cleaned,
+         method = "bonferroni")
 
 boxplot(annual_income ~ homeownership, data = df_cleaned,
         main = "Boxplot of Response by Group",
@@ -107,6 +110,136 @@ ggplot(df, aes(x = annual_income, color = homeownership, fill = homeownership)) 
 # Interpretation: ANOVA result indicated that there are significant difference between the mean of the homeownership group. We use tukey to see which pairs of group are different. 
 #   The result showed that the mean of annual_income in Mortgage have significant difference compared to others two group.
 #   However, people who rent the houses and own houses didn't have significant difference in the confidence level of mean in annual_income cause it cross the 0 in xline. 
+
+
+
+# Question 2:
+df_cleaned$num_open_cc_accounts <- NULL
+numeric_cols <- sapply(df_cleaned, is.numeric)
+# Exclude the response variable from predictors
+predictors <- names(df_cleaned)[numeric_cols & names(df_cleaned) != "interest_rate"]
+
+
+# Create the feature matrix and response vector
+X <- as.matrix(df_cleaned[, predictors])
+y <- df_cleaned$interest_rate
+
+# Set up k-fold cross-validation
+set.seed(123)  # For reproducibility
+k <- 3  # Number of folds
+
+# Create folds for cross-validation
+folds <- createFolds(y, k = k, returnTrain = FALSE)
+
+# Initialize vectors to store cross-validation results
+cv_rmse <- numeric(k)
+cv_mae <- numeric(k)
+cv_r_squared <- numeric(k)
+
+# Perform k-fold cross-validation
+for (i in 1:k) {
+  # Split data into training and test sets
+  test_indices <- folds[[i]]
+  X_train <- X[-test_indices, ]
+  y_train <- y[-test_indices]
+  X_test <- X[test_indices, ]
+  y_test <- y[test_indices]
+  
+  # Fit LASSO model with cross-validation to select the optimal lambda
+  cv_model <- cv.glmnet(X_train, y_train, alpha = 1)
+  
+  # Use the best lambda (lambda.min) for prediction
+  best_lambda <- cv_model$lambda.min
+  
+  # Make predictions on the test set
+  predictions <- predict(cv_model, s = best_lambda, newx = X_test)
+  
+  # Calculate performance metrics
+  rmse <- sqrt(mean((predictions - y_test)^2))
+  mae <- mean(abs(predictions - y_test))
+  ss_total <- sum((y_test - mean(y_test))^2)
+  ss_residual <- sum((y_test - predictions)^2)
+  r_squared <- 1 - (ss_residual / ss_total)
+  
+  # Store the metrics
+  cv_rmse[i] <- rmse
+  cv_mae[i] <- mae
+  cv_r_squared[i] <- r_squared
+  
+  cat("Fold", i, "- RMSE:", round(rmse, 4), "MAE:", round(mae, 4), "R²:", round(r_squared, 4), "\n")
+}
+
+# Calculate and print average performance metrics
+avg_rmse <- mean(cv_rmse)
+avg_mae <- mean(cv_mae)
+avg_r_squared <- mean(cv_r_squared)
+
+cat("\nAverage Cross-Validation Metrics:\n")
+cat("RMSE:", round(avg_rmse, 4), "\n")
+cat("MAE:", round(avg_mae, 4), "\n")
+cat("R²:", round(avg_r_squared, 4), "\n")
+
+# Train the final model on the entire dataset
+final_cv_model <- cv.glmnet(X, y, alpha = 1)
+final_lambda <- final_cv_model$lambda.min
+
+# Plot the cross-validation curve
+plot(final_cv_model)
+title("LASSO Cross-Validation")
+
+# Fit the final model with the optimal lambda
+final_model <- glmnet(X, y, alpha = 1, lambda = final_lambda)
+
+# Extract and display the coefficients
+coefs <- coef(final_model)
+important_vars <- coefs[which(coefs != 0), ]
+cat("\nSelected Variables and Their Coefficients:\n")
+print(important_vars)
+
+# Plot the coefficients
+coef_df <- data.frame(
+  Variable = row.names(as.matrix(coefs)),
+  Coefficient = as.vector(as.matrix(coefs))
+) %>% filter(Coefficient != 0)
+
+# Skip the intercept for better visualization
+coef_plot_data <- coef_df[-1, ]
+
+ggplot(coef_plot_data, aes(x = reorder(Variable, abs(Coefficient)), y = Coefficient)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "Variables", y = "Coefficient Value", 
+       title = "LASSO Regression Coefficients") +
+  theme_minimal()
+
+# Function to make predictions on new data
+predict_interest_rate <- function(new_data) {
+  # Convert to matrix format
+  new_matrix <- as.matrix(new_data[, predictors])
+  # Make predictions
+  predictions <- predict(final_model, newx = new_matrix)
+  return(predictions)
+}
+
+# Example usage of prediction function
+# If you have new data:
+# new_predictions <- predict_interest_rate(new_data)
+# print(new_predictions)
+
+# Optional: Save the model for future use
+saveRDS(list(model = final_model, predictors = predictors), "lasso_interest_rate_model.rds")
+
+cat("\nModel saved as 'lasso_interest_rate_model.rds'\n")
+cat("To load the model: model_data <- readRDS('lasso_interest_rate_model.rds')\n")
+
+
+
+
+
+
+
+
+
 
 
 
