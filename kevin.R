@@ -115,6 +115,9 @@ ggplot(df, aes(x = annual_income, color = homeownership, fill = homeownership)) 
 
 # Question 2:
 df_cleaned$num_open_cc_accounts <- NULL
+df_cleaned$public_record_bankrupt <- NULL
+df_cleaned$term <- NULL
+df_cleaned$num_collections_last_12m <- NULL
 numeric_cols <- sapply(df_cleaned, is.numeric)
 # Exclude the response variable from predictors
 predictors <- names(df_cleaned)[numeric_cols & names(df_cleaned) != "interest_rate"]

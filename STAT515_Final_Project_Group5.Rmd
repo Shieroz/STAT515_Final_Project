@@ -196,6 +196,92 @@ ggplot(df, aes(x = annual_income, color = homeownership, fill = homeownership)) 
 ### We choose to use nonparametric Kruskal–Wallis. By using two plots we can said that the group have the same shape of distribution
 
 
+# Question 2: Predict interest_rate 
+```{r}
+df_cleaned$num_open_cc_accounts <- NULL
+df_cleaned$public_record_bankrupt <- NULL
+df_cleaned$term <- NULL
+df_cleaned$num_collections_last_12m <- NULL
+numeric_cols <- sapply(df_cleaned, is.numeric)
+predictors <- names(df_cleaned)[numeric_cols & names(df_cleaned) != "interest_rate"]
+
+
+X <- as.matrix(df_cleaned[, predictors])
+y <- df_cleaned$interest_rate
+
+set.seed(42)
+k <- 3
+
+folds <- createFolds(y, k = k, returnTrain = FALSE)
+
+
+cv_rmse <- numeric(k)
+cv_mae <- numeric(k)
+cv_r_squared <- numeric(k)
+
+
+for (i in 1:k) {
+  test_indices <- folds[[i]]
+  X_train <- X[-test_indices, ]
+  y_train <- y[-test_indices]
+  X_test <- X[test_indices, ]
+  y_test <- y[test_indices]
+  
+  cv_model <- cv.glmnet(X_train, y_train, alpha = 1)
+  
+  best_lambda <- cv_model$lambda.min
+  
+  predictions <- predict(cv_model, s = best_lambda, newx = X_test)
+  
+  rmse <- sqrt(mean((predictions - y_test)^2))
+  mae <- mean(abs(predictions - y_test))
+  ss_total <- sum((y_test - mean(y_test))^2)
+  ss_residual <- sum((y_test - predictions)^2)
+  r_squared <- 1 - (ss_residual / ss_total)
+  
+  cv_rmse[i] <- rmse
+  cv_mae[i] <- mae
+  cv_r_squared[i] <- r_squared
+  
+  cat("Fold", i, "- RMSE:", round(rmse, 4), "MAE:", round(mae, 4), "R²:", round(r_squared, 4), "\n")
+}
+
+avg_rmse <- mean(cv_rmse)
+avg_mae <- mean(cv_mae)
+avg_r_squared <- mean(cv_r_squared)
+
+cat("\nAverage Cross-Validation Metrics:\n")
+cat("RMSE:", round(avg_rmse, 4), "\n")
+cat("MAE:", round(avg_mae, 4), "\n")
+cat("R²:", round(avg_r_squared, 4), "\n")
+
+final_cv_model <- cv.glmnet(X, y, alpha = 1)
+final_lambda <- final_cv_model$lambda.min
+
+plot(final_cv_model)
+title("LASSO Cross-Validation")
+
+final_model <- glmnet(X, y, alpha = 1, lambda = final_lambda)
+
+coefs <- coef(final_model)
+important_vars <- coefs[which(coefs != 0), ]
+cat("\nSelected Variables and Their Coefficients:\n")
+print(important_vars)
+
+coef_df <- data.frame(
+  Variable = row.names(as.matrix(coefs)),
+  Coefficient = as.vector(as.matrix(coefs))
+) %>% filter(Coefficient != 0)
+
+coef_plot_data <- coef_df[-1, ]
+
+ggplot(coef_plot_data, aes(x = reorder(Variable, abs(Coefficient)), y = Coefficient)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "Variables", y = "Coefficient Value", 
+       title = "LASSO Regression Coefficients") +
+  theme_minimal()
+```
 
 
 
