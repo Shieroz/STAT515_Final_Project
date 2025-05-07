@@ -1,8 +1,8 @@
 library('tidyverse')
 library(ggplot2)
-source('./hw.R')
 library(dplyr)
 library(randomForest)
+library(caret)
 
 load('./loans_full_schema.rda')
 
@@ -81,6 +81,22 @@ str(rf_data)
 rf_model <- randomForest(grade ~ ., data = rf_data, importance = TRUE)
 importance(rf_model)
 top_vars <- names(sort(importance(rf_model)[,1], decreasing = TRUE))[1:5]
-df_subset <- df[, c(top_vars, "target")]
-rf_subset <- randomForest(target ~ ., data = df_subset)
+
+
+
+df_subset <- rf_data[, c(top_vars, "grade")]
+rf_subset <- randomForest(grade ~ ., data = df_subset)
+
+ctrl <- rfeControl(functions = rfFuncs, method = "cv", number = 5)
+# sizes = the candidate subset sizes you want to try
+rfe_res <- rfe(
+  x          = df_cleaned[, setdiff(names(df_cleaned), "grade")],
+  y          = df_cleaned$grade,
+  sizes      = c(5, 10, 15, 20),
+  rfeControl = ctrl
+)
+# best variables
+predictors(rfe_res)
+# re-fit on those
+rf_rfe <- randomForest(grade ~ ., data = df[, c(predictors(rfe_res), "grade")])
 
