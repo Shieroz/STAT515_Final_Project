@@ -3,6 +3,8 @@ library(ggplot2)
 library(dplyr)
 library(randomForest)
 library(tidyr)
+library(tree)
+library(WRS2)
 library(car)
 library(caret)
 
@@ -109,26 +111,11 @@ ggplot(df, aes(x = annual_income, color = homeownership, fill = homeownership)) 
 
 
 
-## Question 2: Do different loan_purpose categories have significantly different average interest_rates, even after controlling for borrower risk profiles (e.g., grade)?
-# H0: All purpose‐group means are equal after adjusting for grade.
-# H1: All purpose‐group means are not equal after adjusting for grade.
-
-# ANCOVA assumes the relationship between the covariate (grade) and outcome is the same in every group.
-mod_int <- lm(interest_rate ~ loan_purpose * grade, data = df_cleaned)
-anova(mod_int)
-# Since the loan_purpose:grade interaction isn’t significant the homogeneity of slopes assumption holds
-
-# 2. Fit ANCOVA without interaction
-mod_ancova <- lm(interest_rate ~ grade + loan_purpose, data = df_cleaned)
-Anova(mod_ancova, type = "III")
-summary(mod_ancova)
-
-
-par(mfrow = c(2,2))
-plot(mod_ancova)  
-
-
-
+## Question 2: What affect people loan_status the most?
+loan_status_df <- df_cleaned
+loan_status_df$loan_status <- factor(rf_loan_status_df, levels = c("Charged Off", "Late(31-120 days)", "Late (16-30 days)", "In Grace Period", "Current", "Fully Paid"), ordered = TRUE)
+set.seed(1)
+train = sample(1:nrow(Boston), nrow(Boston)/2)
 
 
 
@@ -136,6 +123,10 @@ plot(mod_ancova)
 ## Question 2: Did the people with verified income have lower interest_rate
 anova_result <- aov(interest_rate ~ verified_income, data = df_cleaned)
 summary(anova_result)
+
+
+car::durbinWatsonTest(anova_result)
+
 tukey_result <- TukeyHSD(anova_result)
 par(mar = c(4, 9.5, 2, 2)) # bottom, left, top, right
 plot(tukey_result, las = 1, cex.axis = 0.8)
@@ -145,11 +136,15 @@ abline(v = 0, col = "red", lwd = 2, lty = "dashed")
 
 
 
+
+
+
 ## Question 3: Predict Grade by Random Forest (To be continue)
 df_cleaned$grade <- droplevels(df_cleaned$grade) # Remove the unused target level
 rf_data <- df_cleaned
 # removing columns
-rf_data <- rf_data %>% select(-sub_grade, -issue_month)
+rf_data$sub_grade   <- NULL
+rf_data$issue_month <- NULL
 
 rf_data$state <- as.factor(rf_data$state)
 rf_data$application_type <- as.factor(rf_data$application_type)
@@ -160,27 +155,35 @@ rf_data$disbursement_method <- as.factor(rf_data$disbursement_method)
 rf_data$initial_listing_status <- as.factor(rf_data$initial_listing_status)
 rf_data$verified_income <- as.factor(rf_data$verified_income)
 
-str(rf_data)
+# Split data
+set.seed(42)
+train_index <- sample(seq_len(nrow(rf_data)), size = 0.8 * nrow(rf_data))
+train_data <- rf_data[train_index, ]
+test_data  <- rf_data[-train_index, ]
 
-rf_model <- randomForest(grade ~ ., data = rf_data, importance = TRUE)
+rf_model <- randomForest(grade ~ ., data = train_data, importance = TRUE)
 importance(rf_model)
 top_vars <- names(sort(importance(rf_model)[,1], decreasing = TRUE))[1:5]
 
 
 ctrl <- rfeControl(functions = rfFuncs, method = "cv", number = 5)
-# sizes = the candidate subset sizes you want to try
+
+# We first test 4, 10, 15, 20. 5 perform best then we narrow the range to 5-9
 rfe_res <- rfe(
-  x          = rf_data[, setdiff(names(rf_data), "grade")],
-  y          = rf_data$grade,
-  sizes      = c(5, 10, 15, 20),
+  x          = train_data[, setdiff(names(train_data), "grade")],
+  y          = train_data$grade,
+  sizes      = c(5, 6, 7, 8, 9),
   rfeControl = ctrl
 )
-# best variables
-predictors(rfe_res)
-# re-fit on those
-rf_rfe <- randomForest(grade ~ ., data = rf_data[, c(predictors(rfe_res), "grade")])
 
-# Compare original model and variable select model
+predictors(rfe_res)
+
+# re-fit on those
+rf_rfe <- randomForest(grade ~ ., data = train_data[, c(predictors(rfe_res), "grade")])
+
+# Evaluate on test data
+pred <- predict(rf_rfe, newdata = test_data[, predictors(rfe_res)])
+confusionMatrix(pred, test_data$grade)
 
 
 

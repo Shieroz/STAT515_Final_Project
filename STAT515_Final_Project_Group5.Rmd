@@ -210,34 +210,35 @@ abline(v = 0, col = "red", lwd = 2, lty = "dashed")
 
 # Question 3: Predict Grade by Random Forest (To be continue)
 ```{r}
-df_cleaned$grade <- droplevels(df_cleaned$grade) # Remove the unused target level
-rf_data <- df_cleaned
-# removing columns
-rf_data <- rf_data %>% select(-sub_grade, -issue_month)
-rf_model <- randomForest(grade ~ ., data = rf_data, importance = TRUE)
+# Split the data
+set.seed(42)
+train_index <- sample(seq_len(nrow(rf_data)), size = 0.8 * nrow(rf_data))
+train_data <- rf_data[train_index, ]
+test_data  <- rf_data[-train_index, ]
+
+rf_model <- randomForest(grade ~ ., data = train_data, importance = TRUE)
 importance(rf_model)
 ```
 
 ```{r}
-# Choose the importance variables
 ctrl <- rfeControl(functions = rfFuncs, method = "cv", number = 5)
-# sizes = the candidate subset sizes you want to try
+
+# We first test 4, 10, 15, 20. 5 perform best then we narrow the range to 5-9
 rfe_res <- rfe(
-  x          = rf_data[, setdiff(names(rf_data), "grade")],
-  y          = rf_data$grade,
-  sizes      = c(5, 10, 15, 20),
+  x          = train_data[, setdiff(names(train_data), "grade")],
+  y          = train_data$grade,
+  sizes      = c(5, 6, 7, 8, 9),
   rfeControl = ctrl
 )
-# best variables
+
 predictors(rfe_res)
+
 # re-fit on those
-rf_rfe <- randomForest(grade ~ ., data = rf_data[, c(predictors(rfe_res), "grade")])
+rf_rfe <- randomForest(grade ~ ., data = train_data[, c(predictors(rfe_res), "grade")])
+
+# Evaluate on test data
+pred <- predict(rf_rfe, newdata = test_data[, predictors(rfe_res)])
+confusionMatrix(pred, test_data$grade)
 ```
 
-
-### Compare original model and variable selct model
-```{r}
-print(rf_model)
-print(rf_rfe)
-```
 
