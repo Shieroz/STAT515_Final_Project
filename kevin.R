@@ -260,6 +260,8 @@ rf_data <- df_cleaned
 # removing columns
 rf_data$sub_grade   <- NULL
 rf_data$issue_month <- NULL
+rf_data$sub_grade <- NULL
+rf_data$interest_rate <- NULL
 
 rf_data$state <- as.factor(rf_data$state)
 rf_data$application_type <- as.factor(rf_data$application_type)
@@ -279,7 +281,9 @@ test_data  <- rf_data[-train_index, ]
 rf_model <- randomForest(grade ~ ., data = train_data, importance = TRUE)
 importance(rf_model)
 top_vars <- names(sort(importance(rf_model)[,1], decreasing = TRUE))[1:5]
-
+varImpPlot(rf_model, 
+           main = "Original Random Forest Variable Importance",
+           type = 1)
 
 ctrl <- rfeControl(functions = rfFuncs, method = "cv", number = 5)
 
@@ -287,18 +291,27 @@ ctrl <- rfeControl(functions = rfFuncs, method = "cv", number = 5)
 rfe_res <- rfe(
   x          = train_data[, setdiff(names(train_data), "grade")],
   y          = train_data$grade,
-  sizes      = c(5, 6, 7, 8, 9),
+  sizes      = c(1, 2, 3, 4, 5),
   rfeControl = ctrl
 )
 
 predictors(rfe_res)
 
 # re-fit on those
-rf_rfe <- randomForest(grade ~ ., data = train_data[, c(predictors(rfe_res), "grade")])
+rf_rfe <- randomForest(grade ~ ., data = train_data[, c(predictors(rfe_res), "grade")], importance=TRUE)
 
+test_data$sub_grade   <- NULL
+test_data$issue_month <- NULL
+test_data$sub_grade <- NULL
+test_data$interest_rate <- NULL
 # Evaluate on test data
 pred <- predict(rf_rfe, newdata = test_data[, predictors(rfe_res)])
 confusionMatrix(pred, test_data$grade)
 
+# default: plots both MeanDecreaseAccuracy and MeanDecreaseGini
+varImpPlot(rf_rfe, 
+           main = "Random Forest Variable Importance",
+           type = 1)
 
-
+or_pred <- predict(rf_model, newdata = test_data[, predictors(rf_model)])
+confusionMatrix(or_pred, test_data$grade)

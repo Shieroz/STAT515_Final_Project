@@ -654,9 +654,9 @@ df &lt;- loans_full_schema</code></pre>
 df$annual_income &lt;- ifelse(df$verification_income_joint %in% c(&quot;Verified&quot;, &quot;Source Verified&quot;), df$annual_income_joint, df$annual_income)
 df$debt_to_income &lt;- ifelse(df$verification_income_joint %in% c(&quot;Verified&quot;, &quot;Source Verified&quot;), df$debt_to_income_joint, df$debt_to_income)
 
-df_cleaned = df[ , !names(df) %in% c(&#39;emp_title&#39;, &#39;annual_income_joint&#39;, &#39;months_since_last_delinq&#39;, &#39;months_since_90d_late&#39;, &#39;debt_to_income_joint&#39;, &#39;current_accounts_delinq&#39;, &#39;verification_income_joint&#39;, &#39;months_since_last_credit_inquiry&#39;)]
+df_cleaned = df[ , !names(df) %in% c(&#39;emp_title&#39;, &#39;annual_income_joint&#39;, &#39;months_since_last_delinq&#39;, &#39;months_since_90d_late&#39;, &#39;debt_to_income_joint&#39;, &#39;current_accounts_delinq&#39;, &#39;verification_income_joint&#39;, &#39;months_since_last_credit_inquiry&#39;, &#39;sub_grade&#39;)]
 str(df_cleaned)</code></pre>
-<pre><code>## tibble [10,000 × 47] (S3: tbl_df/tbl/data.frame)
+<pre><code>## tibble [10,000 × 46] (S3: tbl_df/tbl/data.frame)
 ##  $ emp_length                  : num [1:10000] 3 10 3 1 10 NA 10 10 10 3 ...
 ##  $ state                       : Factor w/ 51 levels &quot;&quot;,&quot;AK&quot;,&quot;AL&quot;,&quot;AR&quot;,..: 32 13 49 39 6 18 23 5 34 15 ...
 ##  $ homeownership               : Factor w/ 5 levels &quot;&quot;,&quot;ANY&quot;,&quot;MORTGAGE&quot;,..: 3 5 5 5 5 4 3 3 3 5 ...
@@ -694,7 +694,6 @@ str(df_cleaned)</code></pre>
 ##  $ interest_rate               : num [1:10000] 14.07 12.61 17.09 6.72 14.07 ...
 ##  $ installment                 : num [1:10000] 652.5 167.5 71.4 664.2 786.9 ...
 ##  $ grade                       : Factor w/ 8 levels &quot;&quot;,&quot;A&quot;,&quot;B&quot;,&quot;C&quot;,..: 4 4 5 2 4 2 4 3 4 2 ...
-##  $ sub_grade                   : Factor w/ 36 levels &quot;&quot;,&quot;A1&quot;,&quot;A2&quot;,&quot;A3&quot;,..: 14 12 17 4 14 4 13 11 13 4 ...
 ##  $ issue_month                 : Factor w/ 4 levels &quot;&quot;,&quot;Feb-2018&quot;,..: 4 2 2 3 4 3 3 3 2 4 ...
 ##  $ loan_status                 : Factor w/ 7 levels &quot;&quot;,&quot;Charged Off&quot;,..: 3 3 3 3 3 3 3 3 3 3 ...
 ##  $ initial_listing_status      : Factor w/ 3 levels &quot;&quot;,&quot;fractional&quot;,..: 3 3 2 3 3 3 3 3 3 2 ...
@@ -745,18 +744,16 @@ df_cleaned$emp_length[is.na(df_cleaned$emp_length)] &lt;- replace_emp_length
 ##                         0.00                         0.00 
 ##                interest_rate                  installment 
 ##                         0.00                         0.00 
-##                        grade                    sub_grade 
+##                        grade                  issue_month 
 ##                         0.00                         0.00 
-##                  issue_month                  loan_status 
+##                  loan_status       initial_listing_status 
 ##                         0.00                         0.00 
-##       initial_listing_status          disbursement_method 
+##          disbursement_method                      balance 
 ##                         0.00                         0.00 
-##                      balance                   paid_total 
+##                   paid_total               paid_principal 
 ##                         0.00                         0.00 
-##               paid_principal                paid_interest 
-##                         0.00                         0.00 
-##               paid_late_fees 
-##                         0.00</code></pre>
+##                paid_interest               paid_late_fees 
+##                         0.00                         0.00</code></pre>
 <pre class="r"><code>ggplot(df_cleaned, aes(x = debt_to_income)) +
   geom_histogram(fill=&quot;cornsilk&quot;, color = &quot;black&quot;)</code></pre>
 <pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
@@ -987,135 +984,132 @@ test_data  &lt;- rf_data[-train_index, ]
 
 rf_model &lt;- randomForest(grade ~ ., data = train_data, importance = TRUE)
 importance(rf_model)</code></pre>
-<pre><code>##                                       A          B            C          D
-## emp_length                    0.8299743  0.4512939  0.156226795  0.2193733
-## state                        -1.4077220  1.3117074  0.218636772 -0.2059359
-## homeownership                 2.0613987  3.9503427  2.425007554  1.9364169
-## annual_income                 6.0144573  5.4183117  5.253079287  1.8457187
-## verified_income               8.4749483  5.4821691  4.666823953  5.2828221
-## debt_to_income                6.7123822  8.3742643  5.648064843  4.9235263
-## delinq_2y                     5.3360401  1.4633728  0.424459778 -0.7405121
-## earliest_credit_line          5.1064981  5.0092838  1.415428393  1.5226674
-## inquiries_last_12m            3.7450438  1.2587433  1.255841226  2.9733232
-## total_credit_lines            4.7949292  7.6631480  5.024471500  2.8841994
-## open_credit_lines             4.5133800  4.7742417  4.587732934  2.5142835
-## total_credit_limit            9.9433730  7.2590809  7.341194515  6.2674554
-## total_credit_utilized         5.7839344  5.8086455  6.738253151  4.4297752
-## num_historical_failed_to_pay  0.9246719 -0.5250807  0.229783413  0.3545049
-## total_collection_amount_ever  8.1323446  2.7255934 -3.027756094 -2.6233225
-## current_installment_accounts  1.6843237  4.9585816  3.434441217  1.9894614
-## accounts_opened_24m           3.7633144  3.2554889  3.371283038  1.9544060
-## num_satisfactory_accounts     4.9014540  6.9021570  4.910557267  3.8846727
-## num_accounts_120d_past_due    0.0000000  0.0000000  0.000000000  0.0000000
-## num_accounts_30d_past_due     0.0000000  0.0000000  0.000000000  0.0000000
-## num_active_debit_accounts     4.4249111  3.7004917  5.349254524  4.7884715
-## total_debit_limit            14.8136099 10.0380895 12.283447867 13.6670353
-## num_total_cc_accounts         3.8452440  3.9491114  4.562525909  3.5244339
-## num_cc_carrying_balance       4.8876433  1.1924081  4.840716217  3.6081460
-## num_mort_accounts             2.0140681  3.1076212  5.610401180  6.2185690
-## account_never_delinq_percent  9.1578033  2.9779458  0.125971980  3.5530214
-## tax_liens                     2.3596061 -1.0491335 -2.516005357 -0.8286902
-## loan_purpose                  1.1781705  1.6772702  2.549777163  4.0638280
-## application_type              3.0739527  2.4764312  2.385876753  1.3082105
-## loan_amount                  11.9070406 13.4547531 14.614503142 13.7781434
-## interest_rate                60.3374761 51.1353373 51.707083478 64.1068103
-## installment                  11.9716065 12.9186426 17.293585881 13.6187156
-## sub_grade                    29.9005945 45.2721394 53.389238634 54.8887207
-## issue_month                   3.4203376  5.7290487  7.120445212  2.0972231
-## loan_status                   2.8982323  3.0993630  3.656054128  2.3062935
-## initial_listing_status        3.6545525  3.3479308  0.598472520  1.2334028
-## disbursement_method           3.2925639  3.1950917  7.859323880 11.0851800
-## balance                      11.4491717 14.0226287 14.903366313 14.8606788
-## paid_total                   11.2193894 14.0079581 15.568866495 15.3752318
-## paid_principal               16.9975417 18.1484974 20.231263637 19.9824734
-## paid_interest                21.7728197 21.7887195 22.038804039 22.4502557
-## paid_late_fees                0.6136586 -1.3451128  0.005716466 -1.4168748
-##                                        E           F          G
-## emp_length                   -0.35903977 -0.43283751 -1.1356902
-## state                         0.08426378  0.31344686  1.8421421
-## homeownership                 0.58030457 -1.36450414  0.6063143
-## annual_income                 1.28119936  0.72677323 -1.1039887
-## verified_income               5.79778179  0.38966178 -3.8373595
-## debt_to_income                4.60919654  0.28109360  2.8923028
-## delinq_2y                    -0.58715199 -0.66930945  0.0000000
-## earliest_credit_line          0.96570339  0.54829428  0.3848845
-## inquiries_last_12m            1.23977223  1.39722932  0.4716681
-## total_credit_lines            1.71156168  0.02972310 -1.6092706
-## open_credit_lines             0.57300303  0.03631644  1.2144654
-## total_credit_limit            4.46249367  2.21898702  0.9671859
-## total_credit_utilized         1.91405370  1.49489219 -1.2652485
-## num_historical_failed_to_pay  0.02099987 -0.78860037  0.0000000
-## total_collection_amount_ever -1.51150951 -1.19520134  1.0010015
-## current_installment_accounts  0.57880572  0.35618384  1.4848230
-## accounts_opened_24m           0.73083301  0.01059825 -0.3119218
-## num_satisfactory_accounts     1.65607163  0.52531196  0.6327087
-## num_accounts_120d_past_due    0.00000000  0.00000000  0.0000000
-## num_accounts_30d_past_due     0.00000000  0.00000000  0.0000000
-## num_active_debit_accounts     0.99460053  1.65102922 -0.9751022
-## total_debit_limit             9.79682617  2.67585866  3.9266047
-## num_total_cc_accounts         2.02132196  0.06662551  0.3248192
-## num_cc_carrying_balance       0.78999042  0.47749809  1.7324756
-## num_mort_accounts             2.50245846 -0.31308447 -0.4279288
-## account_never_delinq_percent  0.96028201 -0.20668754  3.0575891
-## tax_liens                    -0.01337184 -1.39268455  0.0000000
-## loan_purpose                  3.57422366  3.82581874  1.4661218
-## application_type              0.56609712  0.54267354  1.0010015
-## loan_amount                   6.65893547  4.84501090  1.8507840
-## interest_rate                55.52519064 30.01696924 11.3783357
-## installment                   9.74305503  8.48782369  5.4625337
-## sub_grade                    39.10766401 19.27832459 11.3840534
-## issue_month                   0.78503052  0.70310475  1.4372340
-## loan_status                   0.38809042 -0.69559493  0.0000000
-## initial_listing_status        5.58846551  4.39221301  1.5753235
-## disbursement_method           9.12104074  5.05254652  1.7914087
-## balance                       7.68367281  3.92628176  2.4951876
-## paid_total                   10.23798177  4.72187993  4.6281620
-## paid_principal               14.85171948 10.41700384  4.5370222
-## paid_interest                24.43900452 19.22002088  9.9539220
-## paid_late_fees               -1.41631084  0.00000000  0.0000000
+<pre><code>##                                        A           B          C          D
+## emp_length                    -0.3018580  2.63547127  0.1724831  2.6780292
+## state                         -0.4768494  0.74322419  0.6270011 -1.0091139
+## homeownership                  1.6455462  4.37741027  3.0825847  2.6448228
+## annual_income                  6.2383871  7.26245410  5.3339835  1.5104429
+## verified_income                7.4744535  5.00569530  3.1598506  8.0257544
+## debt_to_income                 8.4543900  7.33676035  5.1603171  5.1392133
+## delinq_2y                      5.7200781  2.71251534 -0.1194187 -0.2188477
+## earliest_credit_line           4.5827822  2.19965684  0.4715767  1.2605802
+## inquiries_last_12m             5.0539420  2.11413078 -0.5046804  3.1769454
+## total_credit_lines             4.2771614  7.28464510  6.3143893  4.5733285
+## open_credit_lines              3.5367323  6.59332070  5.7113881  4.4210121
+## total_credit_limit            10.5000549  8.38183659  6.6744643  7.7353115
+## total_credit_utilized          5.1294614  6.77644724  6.8958996  8.3842480
+## num_historical_failed_to_pay   2.3997116  0.85418235  0.7833942 -1.3353930
+## total_collection_amount_ever   7.8745118  2.47403989 -2.1226331 -1.1901346
+## current_installment_accounts   1.4976651  6.25712395  2.8619986  0.7645130
+## accounts_opened_24m            4.3489271  3.93124882 -0.1381741  2.3317262
+## num_satisfactory_accounts      3.1985315  5.59439748  6.3587936  3.5093340
+## num_accounts_120d_past_due     0.0000000  0.00000000  0.0000000  0.0000000
+## num_accounts_30d_past_due      0.0000000  0.00000000  0.0000000  0.0000000
+## num_active_debit_accounts      3.5965387  4.34438164  5.4553174  5.4185987
+## total_debit_limit             15.0679386  9.90210997 14.1846354 14.4278239
+## num_total_cc_accounts          3.5372694  2.35033585  4.2545542  3.0443804
+## num_cc_carrying_balance        5.3599751  2.71417636  3.6410777  3.1020760
+## num_mort_accounts              4.4635271  3.37784361  5.2685341  5.8658155
+## account_never_delinq_percent  11.0366073 -0.61377071  3.8855129  2.6256699
+## tax_liens                     -2.0694789 -0.63080932 -1.1851945  1.5833558
+## loan_purpose                   1.0026026  0.89955362  1.9480313  4.2459261
+## application_type               1.9040912  2.57450031  0.6923567 -2.6730696
+## loan_amount                   13.4792631 18.36611287 18.7010729 15.4784549
+## interest_rate                117.3276011 87.12829302 89.7664489 94.2767794
+## installment                   14.6840887 17.32871730 19.3124249 16.9637681
+## issue_month                    6.2461848  8.53297491  9.9187265  4.1391644
+## loan_status                    2.1528930  4.95669608  5.1642052  2.5507908
+## initial_listing_status         5.4266671  1.17769850  0.5170690  2.0512079
+## disbursement_method            3.4272129  1.30033249  7.0741680 10.3933537
+## balance                       14.3327299 18.39133013 20.4201968 16.9281534
+## paid_total                    15.0459393 18.90835718 20.9299084 18.7558231
+## paid_principal                20.9467526 23.40473639 26.6545161 26.8219448
+## paid_interest                 26.3393562 27.16465048 30.0541963 28.0019317
+## paid_late_fees                 1.0010015  0.02895767 -0.5634575  0.6810740
+##                                       E           F           G
+## emp_length                   -1.5215889 -0.94165090 -2.57894264
+## state                         2.3321222  0.54784665  0.25190562
+## homeownership                -0.3467251 -0.85122840  1.82431600
+## annual_income                 0.6670225 -0.87269273  0.10121822
+## verified_income               6.6217619 -0.93721109 -0.99451485
+## debt_to_income                6.2345015  1.07174929  1.99516726
+## delinq_2y                    -2.3496968 -0.19895483  1.00100150
+## earliest_credit_line          2.1805028  2.09609433  0.21939229
+## inquiries_last_12m            0.9079788  0.39796758  1.41389940
+## total_credit_lines           -0.6057054  1.17429456 -0.48901811
+## open_credit_lines            -1.7827761  0.31529928 -1.26693979
+## total_credit_limit            1.5358434  0.68690794  0.25821610
+## total_credit_utilized         0.7079081  0.20263014  2.63440337
+## num_historical_failed_to_pay -0.7177169 -2.02315486  0.00000000
+## total_collection_amount_ever  0.4936370 -0.80146652  0.00000000
+## current_installment_accounts  0.6558341  2.37961012  1.90703638
+## accounts_opened_24m          -0.1597310  1.53109937 -0.52334785
+## num_satisfactory_accounts    -1.1986797  0.03832816  0.49553672
+## num_accounts_120d_past_due    0.0000000  0.00000000  0.00000000
+## num_accounts_30d_past_due     0.0000000  0.00000000  0.00000000
+## num_active_debit_accounts     2.5940674  0.85846392 -2.37160574
+## total_debit_limit             9.7713994  3.67238677  2.88387364
+## num_total_cc_accounts        -1.1259917  0.13890562  0.61211406
+## num_cc_carrying_balance       1.4082493  1.25009493  1.40622667
+## num_mort_accounts             2.1601987 -0.11361939  1.18616243
+## account_never_delinq_percent  2.4097400  0.12644747  2.61853636
+## tax_liens                     0.3566662  1.72994473  0.00000000
+## loan_purpose                  0.4203955  2.93878392 -0.66548463
+## application_type              1.0017768  0.04878417  1.00100150
+## loan_amount                   6.1919628  2.87461149  2.17039917
+## interest_rate                58.0972144 26.86527155  9.32083009
+## installment                  11.2903748  7.14854157  3.44651330
+## issue_month                   2.7914167 -0.86292793  0.06788474
+## loan_status                   2.2713934  0.40291879  0.00000000
+## initial_listing_status        7.0203232  3.45332818  0.00000000
+## disbursement_method           7.7616581  3.79429224  1.34406228
+## balance                       7.0603516  2.36974308  2.94325229
+## paid_total                    9.1103532  4.62261560  5.20240737
+## paid_principal               17.1404614  8.64826326  5.83044078
+## paid_interest                29.4156419 16.95272260  8.34024720
+## paid_late_fees               -1.0010015  0.00000000  0.00000000
 ##                              MeanDecreaseAccuracy MeanDecreaseGini
-## emp_length                              0.5068567       16.1671010
-## state                                   0.2864584       90.6717437
-## homeownership                           4.5809080        7.2293066
-## annual_income                           8.2513068       34.5096868
-## verified_income                         9.9432753       30.9425453
-## debt_to_income                         11.5527699       55.3877392
-## delinq_2y                               4.0524888        8.0875377
-## earliest_credit_line                    6.2342384       28.2910478
-## inquiries_last_12m                      5.0265041       21.0289701
-## total_credit_lines                      9.7834890       26.3202144
-## open_credit_lines                       8.2517817       19.6728967
-## total_credit_limit                     12.7289091       42.9960740
-## total_credit_utilized                   9.7521666       33.7183712
-## num_historical_failed_to_pay            0.3522482        4.6319420
-## total_collection_amount_ever            5.0263699       12.7475603
-## current_installment_accounts            6.0008783       16.6704014
-## accounts_opened_24m                     5.3018107       23.5697377
-## num_satisfactory_accounts               9.3677351       20.1563259
-## num_accounts_120d_past_due              0.0000000        0.0000000
-## num_accounts_30d_past_due               0.0000000        0.0000000
-## num_active_debit_accounts               7.3826211       20.0336266
-## total_debit_limit                      18.6250737       96.9492872
-## num_total_cc_accounts                   7.2430694       22.9838762
-## num_cc_carrying_balance                 6.5618140       22.1932496
-## num_mort_accounts                       7.3507412       16.8772327
-## account_never_delinq_percent            8.7732487       31.0251970
-## tax_liens                              -1.8530222        1.8299752
-## loan_purpose                            6.2592295       28.4391511
-## application_type                        4.3174939        3.8304423
-## loan_amount                            19.2529349       59.8394374
-## interest_rate                          66.9851832     2359.6300600
-## installment                            18.4008521       82.5389222
-## sub_grade                              54.1735480     1951.8843324
-## issue_month                             8.6632984       10.3512358
-## loan_status                             4.6981637        8.4554045
-## initial_listing_status                  6.1294630        8.8826567
-## disbursement_method                    11.1636381       14.6240551
-## balance                                17.8498926       68.4197791
-## paid_total                             19.6393674       89.8617458
-## paid_principal                         24.0179285      151.6080259
-## paid_interest                          28.0933165      298.4811654
-## paid_late_fees                         -1.1776728        0.5329026</code></pre>
+## emp_length                           2.220412e+00        34.980586
+## state                                5.982797e-01       186.056193
+## homeownership                        5.061367e+00        15.836509
+## annual_income                        9.477171e+00        66.208238
+## verified_income                      1.134495e+01        40.117769
+## debt_to_income                       1.174281e+01        95.293680
+## delinq_2y                            4.200511e+00        13.847003
+## earliest_credit_line                 4.266293e+00        54.783200
+## inquiries_last_12m                   4.839848e+00        37.160163
+## total_credit_lines                   1.016030e+01        52.610315
+## open_credit_lines                    9.809237e+00        40.527571
+## total_credit_limit                   1.287463e+01        77.776375
+## total_credit_utilized                1.106398e+01        65.161953
+## num_historical_failed_to_pay         1.061488e+00         9.107965
+## total_collection_amount_ever         4.084412e+00        20.920159
+## current_installment_accounts         6.450398e+00        34.086822
+## accounts_opened_24m                  4.811372e+00        45.486779
+## num_satisfactory_accounts            8.325499e+00        39.788213
+## num_accounts_120d_past_due           0.000000e+00         0.000000
+## num_accounts_30d_past_due            0.000000e+00         0.000000
+## num_active_debit_accounts            8.197785e+00        38.837665
+## total_debit_limit                    2.152423e+01       144.531066
+## num_total_cc_accounts                5.492183e+00        49.013516
+## num_cc_carrying_balance              7.210467e+00        43.374920
+## num_mort_accounts                    7.920480e+00        29.986050
+## account_never_delinq_percent         9.113150e+00        52.165330
+## tax_liens                           -7.197971e-01         3.270306
+## loan_purpose                         4.072178e+00        53.342746
+## application_type                     1.163056e+00         7.275650
+## loan_amount                          2.398234e+01        99.636505
+## interest_rate                        1.100564e+02      3190.725015
+## installment                          2.297452e+01       142.962955
+## issue_month                          1.208462e+01        23.511711
+## loan_status                          6.996292e+00        12.989641
+## initial_listing_status               5.709032e+00        14.377756
+## disbursement_method                  1.024693e+01        17.180547
+## balance                              2.330188e+01       124.194991
+## paid_total                           2.527440e+01       161.588595
+## paid_principal                       3.007122e+01       261.711422
+## paid_interest                        3.516132e+01       441.109691
+## paid_late_fees                       1.134502e-04         0.899450</code></pre>
 <pre class="r"><code>pred &lt;- predict(rf_model, newdata = test_data[, predictors(rf_model)])
 confusionMatrix(pred, test_data$grade)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
@@ -1125,33 +1119,33 @@ confusionMatrix(pred, test_data$grade)</code></pre>
 ##          A 495   0   0   0   0   0   0
 ##          B   0 581   0   0   0   0   0
 ##          C   0   0 510   0   0   0   0
-##          D   0   0   0 270   0   0   1
-##          E   0   0   0   0  64   6   4
-##          F   0   0   0   0   0   6   0
+##          D   0   0   0 270  22   2   1
+##          E   0   0   0   0  42  10   4
+##          F   0   0   0   0   0   0   0
 ##          G   0   0   0   0   0   0   0
 ## 
 ## Overall Statistics
 ##                                           
-##                Accuracy : 0.9943          
-##                  95% CI : (0.9899, 0.9972)
+##                Accuracy : 0.9799          
+##                  95% CI : (0.9726, 0.9856)
 ##     No Information Rate : 0.2999          
 ##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
 ##                                           
-##                   Kappa : 0.9925          
+##                   Kappa : 0.9733          
 ##                                           
 ##  Mcnemar&#39;s Test P-Value : NA              
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E Class: F
-## Sensitivity            1.0000   1.0000   1.0000   1.0000  1.00000 0.500000
-## Specificity            1.0000   1.0000   1.0000   0.9994  0.99466 1.000000
-## Pos Pred Value         1.0000   1.0000   1.0000   0.9963  0.86486 1.000000
-## Neg Pred Value         1.0000   1.0000   1.0000   1.0000  1.00000 0.996893
+## Sensitivity            1.0000   1.0000   1.0000   1.0000  0.65625 0.000000
+## Specificity            1.0000   1.0000   1.0000   0.9850  0.99253 1.000000
+## Pos Pred Value         1.0000   1.0000   1.0000   0.9153  0.75000      NaN
+## Neg Pred Value         1.0000   1.0000   1.0000   1.0000  0.98830 0.993805
 ## Prevalence             0.2555   0.2999   0.2633   0.1394  0.03304 0.006195
-## Detection Rate         0.2555   0.2999   0.2633   0.1394  0.03304 0.003098
-## Detection Prevalence   0.2555   0.2999   0.2633   0.1399  0.03820 0.003098
-## Balanced Accuracy      1.0000   1.0000   1.0000   0.9997  0.99733 0.750000
+## Detection Rate         0.2555   0.2999   0.2633   0.1394  0.02168 0.000000
+## Detection Prevalence   0.2555   0.2999   0.2633   0.1523  0.02891 0.000000
+## Balanced Accuracy      1.0000   1.0000   1.0000   0.9925  0.82439 0.500000
 ##                      Class: G
 ## Sensitivity          0.000000
 ## Specificity          1.000000
@@ -1172,7 +1166,7 @@ rfe_res &lt;- rfe(
 )
 
 predictors(rfe_res)</code></pre>
-<pre><code>## [1] &quot;interest_rate&quot;  &quot;sub_grade&quot;      &quot;paid_interest&quot;  &quot;paid_principal&quot;
+<pre><code>## [1] &quot;interest_rate&quot;  &quot;paid_interest&quot;  &quot;paid_principal&quot; &quot;paid_total&quot;    
 ## [5] &quot;installment&quot;</code></pre>
 <pre class="r"><code># re-fit on those
 rf_rfe &lt;- randomForest(grade ~ ., data = train_data[, c(predictors(rfe_res), &quot;grade&quot;)])
@@ -1188,41 +1182,41 @@ confusionMatrix(pred, test_data$grade)</code></pre>
 ##          B   0 581   0   0   0   0   0
 ##          C   0   0 510   0   0   0   0
 ##          D   0   0   0 270   0   0   0
-##          E   0   0   0   0  64   0   0
-##          F   0   0   0   0   0  12   0
-##          G   0   0   0   0   0   0   5
+##          E   0   0   0   0  64   1   1
+##          F   0   0   0   0   0  10   2
+##          G   0   0   0   0   0   1   2
 ## 
 ## Overall Statistics
-##                                      
-##                Accuracy : 1          
-##                  95% CI : (0.9981, 1)
-##     No Information Rate : 0.2999     
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
-##                                      
-##                   Kappa : 1          
-##                                      
-##  Mcnemar&#39;s Test P-Value : NA         
+##                                          
+##                Accuracy : 0.9974         
+##                  95% CI : (0.994, 0.9992)
+##     No Information Rate : 0.2999         
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
+##                                          
+##                   Kappa : 0.9966         
+##                                          
+##  Mcnemar&#39;s Test P-Value : NA             
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E Class: F
-## Sensitivity            1.0000   1.0000   1.0000   1.0000  1.00000 1.000000
-## Specificity            1.0000   1.0000   1.0000   1.0000  1.00000 1.000000
-## Pos Pred Value         1.0000   1.0000   1.0000   1.0000  1.00000 1.000000
-## Neg Pred Value         1.0000   1.0000   1.0000   1.0000  1.00000 1.000000
+## Sensitivity            1.0000   1.0000   1.0000   1.0000  1.00000 0.833333
+## Specificity            1.0000   1.0000   1.0000   1.0000  0.99893 0.998961
+## Pos Pred Value         1.0000   1.0000   1.0000   1.0000  0.96970 0.833333
+## Neg Pred Value         1.0000   1.0000   1.0000   1.0000  1.00000 0.998961
 ## Prevalence             0.2555   0.2999   0.2633   0.1394  0.03304 0.006195
-## Detection Rate         0.2555   0.2999   0.2633   0.1394  0.03304 0.006195
-## Detection Prevalence   0.2555   0.2999   0.2633   0.1394  0.03304 0.006195
-## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000  1.00000 1.000000
+## Detection Rate         0.2555   0.2999   0.2633   0.1394  0.03304 0.005163
+## Detection Prevalence   0.2555   0.2999   0.2633   0.1394  0.03407 0.006195
+## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000  0.99947 0.916147
 ##                      Class: G
-## Sensitivity          1.000000
-## Specificity          1.000000
-## Pos Pred Value       1.000000
-## Neg Pred Value       1.000000
+## Sensitivity          0.400000
+## Specificity          0.999482
+## Pos Pred Value       0.666667
+## Neg Pred Value       0.998449
 ## Prevalence           0.002581
-## Detection Rate       0.002581
-## Detection Prevalence 0.002581
-## Balanced Accuracy    1.000000</code></pre>
+## Detection Rate       0.001033
+## Detection Prevalence 0.001549
+## Balanced Accuracy    0.699741</code></pre>
 </div>
 
 

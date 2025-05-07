@@ -107,7 +107,7 @@ df[df == ""] <- NA
 df$annual_income <- ifelse(df$verification_income_joint %in% c("Verified", "Source Verified"), df$annual_income_joint, df$annual_income)
 df$debt_to_income <- ifelse(df$verification_income_joint %in% c("Verified", "Source Verified"), df$debt_to_income_joint, df$debt_to_income)
 
-df_cleaned = df[ , !names(df) %in% c('emp_title', 'annual_income_joint', 'months_since_last_delinq', 'months_since_90d_late', 'debt_to_income_joint', 'current_accounts_delinq', 'verification_income_joint', 'months_since_last_credit_inquiry')]
+df_cleaned = df[ , !names(df) %in% c('emp_title', 'annual_income_joint', 'months_since_last_delinq', 'months_since_90d_late', 'debt_to_income_joint', 'current_accounts_delinq', 'verification_income_joint', 'months_since_last_credit_inquiry', 'sub_grade')]
 str(df_cleaned)
 
 replace_emp_length <- median(na.omit(df_cleaned$emp_length)) # mean: 5.9, median: 6
