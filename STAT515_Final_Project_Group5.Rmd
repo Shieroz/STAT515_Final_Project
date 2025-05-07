@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library('tidyverse')
 library(ggplot2)
 library(dplyr)
+library(glmnet)
 library(randomForest)
 library(tidyr)
 library(tree)
@@ -192,43 +193,21 @@ ggplot(df, aes(x = annual_income, color = homeownership, fill = homeownership)) 
 ```
 
 ### Interpretation: Becasue the residuals didn't follow normalityu so we can't use the result from ANOVA. 
-### We choose to use  nonparametric Kruskal–Wallis. By using two plots we can said that the group have the same shape of distribution
+### We choose to use nonparametric Kruskal–Wallis. By using two plots we can said that the group have the same shape of distribution
 
 
 
-# Question 2: Did the people in different state have significant differences in average interest_rate
-```{r}
-# ANOVA
-mod_state <- aov(interest_rate ~ state, data = df_cleaned)
-summary(mod_state)
-```
-```{r}
-# Check ANOVA assumption
-# Variance differ
-plot(mod_state, which = 3, main = "Scale–Location") 
-leveneTest(interest_rate ~ state, data = df)
 
-# Normality
-# Extract residuals
-res <- residuals(mod_state)
 
-# QQ–plot (visual)
-qqnorm(res, main="Q–Q Plot of Residuals")
-qqline(res, col="red")
 
-hist(res, breaks=30, prob=TRUE,
-     main="Histogram of Residuals",
-     xlab="Residuals")
-lines(density(res), lwd=2)
-```
 
-### Interpretation: The data satisfy ANOVA assumption so the testing is reliable. Since there have no significant different betwen in average interest_rate for each state.
 
 
 # Question 3: Predict Grade by Random Forest
 ```{r}
 # Split the data
 set.seed(42)
+rf_data <- df_cleaned
 train_index <- sample(seq_len(nrow(rf_data)), size = 0.8 * nrow(rf_data))
 train_data <- rf_data[train_index, ]
 test_data  <- rf_data[-train_index, ]
