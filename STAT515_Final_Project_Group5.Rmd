@@ -11,11 +11,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r message=FALSE}
 # Importing libraries
-library(tidyverse)
+library('tidyverse')
 library(ggplot2)
 library(dplyr)
-library(caret)
 library(randomForest)
+library(tidyr)
+library(tree)
+library(WRS2)
+library(car)
+library(caret)
 ```
 # Dataset Overview
 
@@ -86,8 +90,6 @@ This data set represents thousands of loans made through the Lending Club platfo
 | paid_late_fees | Late fees paid by the applicant |
 
 
-# Hypothesis
-
 # Load Data
 ```{r}
 load('./loans_full_schema.rda')
@@ -99,7 +101,6 @@ df <- loans_full_schema
 # Data cleaning
 ```{r}
 df[df == ""] <- NA
-
 
 # Replace the annual income with joint one if verified
 df$annual_income <- ifelse(df$verification_income_joint %in% c("Verified", "Source Verified"), df$annual_income_joint, df$annual_income)
@@ -224,7 +225,7 @@ lines(density(res), lwd=2)
 ### Interpretation: The data satisfy ANOVA assumption so the testing is reliable. Since there have no significant different betwen in average interest_rate for each state.
 
 
-# Question 3: Predict Grade by Random Forest (To be continue)
+# Question 3: Predict Grade by Random Forest
 ```{r}
 # Split the data
 set.seed(42)
