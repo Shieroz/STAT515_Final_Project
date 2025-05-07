@@ -120,22 +120,43 @@ train = sample(1:nrow(Boston), nrow(Boston)/2)
 
 
 
-## Question 2: Did the people with verified income have lower interest_rate
-anova_result <- aov(interest_rate ~ verified_income, data = df_cleaned)
-summary(anova_result)
+## Question 2: Did the people in different state have significant differences in average interest_rate
+mod_int <- lm(interest_rate ~ state*loan_amount   # income:state, grade:state, if you want
+              + state*annual_income 
+              + state*grade,
+              data = df_cleaned)
+anova(mod_int)
+
+mod33_simple <- lm(
+  interest_rate ~ state 
+  + grade 
+  + loan_amount 
+  + annual_income,
+  data = df_cleaned
+)
+car::Anova(mod33_simple, type="III")
 
 
-car::durbinWatsonTest(anova_result)
+# ANOVA
+mod_state <- aov(interest_rate ~ state, data = df_cleaned)
+summary(mod_state)
 
-tukey_result <- TukeyHSD(anova_result)
-par(mar = c(4, 9.5, 2, 2)) # bottom, left, top, right
-plot(tukey_result, las = 1, cex.axis = 0.8)
-abline(v = 0, col = "red", lwd = 2, lty = "dashed")
+# Check Variance differ
+plot(mod_state, which = 3, main = "Scale–Location") 
+leveneTest(interest_rate ~ state, data = df)
 
-# Interpretation: ANOVA result 
+# Check normality
+# Extract residuals
+res <- residuals(mod_state)
 
+# QQ–plot (visual)
+qqnorm(res, main="Q–Q Plot of Residuals")
+qqline(res, col="red")
 
-
+hist(res, breaks=30, prob=TRUE,
+     main="Histogram of Residuals",
+     xlab="Residuals")
+lines(density(res), lwd=2)
 
 
 
