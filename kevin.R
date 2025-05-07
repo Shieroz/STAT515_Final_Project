@@ -2,6 +2,7 @@ library('tidyverse')
 library(ggplot2)
 library(dplyr)
 library(randomForest)
+library(tidyr)
 library(caret)
 
 load('./loans_full_schema.rda')
@@ -34,19 +35,52 @@ replace_debt_income <- mean(na.omit(df_cleaned$debt_to_income)) # mean: 17.43, m
 df_cleaned$debt_to_income[is.na(df_cleaned$debt_to_income)] <- replace_debt_income
 df_cleaned <- na.omit(df_cleaned)
 
+# See the outlier
+num_cols <- sapply(df_cleaned, is.numeric)
+df_num   <- df_cleaned[ , num_cols]
+boxplot(df_num,
+        main = "Boxplots of Numeric Columns",
+        las  = 2,             # rotate x-labels
+        col  = "lightgray")
+outliers_list <- lapply(df_num, function(x) boxplot.stats(x)$out)
+
+
 
 ## Question 1: With different home-ownership is the income have significant different? 
-### Using One-way ANOVA
 
+### Check whether variables are normal distribution
 anova_result <- aov(annual_income ~ homeownership, data = df_cleaned)
-summary(anova_result)
-tukey_result <- TukeyHSD(anova_result)
-plot(tukey_result, las = 1)
-abline(v = 0, col = "red", lwd = 2, lty = "dashed") # horizontal line is a confidence interval for the difference in means between two groups.
+qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
+
+# Try transform the data and try again
+anova_trans <- df_cleaned
+anova_trans$annual_income_log <- log(anova_trans$annual_income + 1)
+anova_trans$annual_income_sqrt <- sqrt(anova_trans$annual_income)
+
+anova_result <- aov(annual_income_log ~ homeownership, data = anova_trans)
+qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
+
+anova_result <- aov(annual_income_sqrt ~ homeownership, data = anova_trans)
+qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
+
+### Using Kruskal–Wallis test (nonparametric): Compares group medians by ranking all data, then testing whether rank-sums differ more than expected by chance.
+
+table(df_cleaned$homeownership)
+# Since no values for 'ANY' we remove it.
+df_cleaned <- df_cleaned[df_cleaned$homeownership != "ANY", ]
+
+kw <- kruskal.test(annual_income ~ homeownership, data = df_cleaned)
+print(kw)
+
+boxplot(annual_income ~ homeownership, data = df_cleaned,
+        main = "Boxplot of Response by Group",
+        xlab = "Group", ylab = "Response")
 
 # Interpretation: ANOVA result indicated that there are significant difference between the mean of the homeownership group. We use tukey to see which pairs of group are different. 
 #   The result showed that the mean of annual_income in Mortgage have significant difference compared to others two group.
 #   However, people who rent the houses and own houses didn't have significant difference in the confidence level of mean in annual_income cause it cross the 0 in xline. 
+
+
 
 
 ## Question 2: Did the people with verified income have lower interest_rate
@@ -96,5 +130,7 @@ predictors(rfe_res)
 # re-fit on those
 rf_rfe <- randomForest(grade ~ ., data = rf_data[, c(predictors(rfe_res), "grade")])
 
-# Compare original model and variable selct model
+# Compare original model and variable select model
+
+
 

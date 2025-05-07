@@ -129,24 +129,59 @@ df_cleaned$loan_status <- as.factor(df_cleaned$loan_status)
 df_cleaned$disbursement_method <- as.factor(df_cleaned$disbursement_method)
 df_cleaned$initial_listing_status <- as.factor(df_cleaned$initial_listing_status)
 df_cleaned$verified_income <- as.factor(df_cleaned$verified_income)
+
+# Check outlier
+num_cols <- sapply(df_cleaned, is.numeric)
+df_num   <- df_cleaned[ , num_cols]
+boxplot(df_num,
+        main = "Boxplots of Numeric Columns",
+        las  = 2, 
+        col  = "lightgray")
+outliers_list <- lapply(df_num, function(x) boxplot.stats(x)$out)
 ```
 
 
 # Question 1: With different home-ownership is the income have significant different? 
-### Using One-way ANOVA
+### Using One-way ANOVA (failed)
+### Reason: The residual didn't follow the normal distribution
 ```{r}
 anova_result <- aov(annual_income ~ homeownership, data = df_cleaned)
-summary(anova_result)
-tukey_result <- TukeyHSD(anova_result)
-plot(tukey_result, las = 1)
-abline(v = 0, col = "red", lwd = 2, lty = "dashed") 
-# horizontal line is a confidence interval for the difference in means between two groups.
+qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
+# Try transform the data and try again
+anova_trans <- df_cleaned
+anova_trans$annual_income_log <- log(anova_trans$annual_income + 1)
+anova_trans$annual_income_sqrt <- sqrt(anova_trans$annual_income)
+# try again
+anova_result <- aov(annual_income_log ~ homeownership, data = anova_trans)
+qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
+
+anova_result <- aov(annual_income_sqrt ~ homeownership, data = anova_trans)
+qqnorm(residuals(anova_result)); qqline(residuals(anova_result))
 ```
 
-### Interpretation: ANOVA result indicated that there are significant difference between the mean of the homeownership group. 
-###   We use tukey to see which pairs of group are different. 
-###   The result showed that the mean of annual_income in Mortgage have significant difference compared to others two group.
-###   However, people who rent the houses and own houses didn't have significant difference in the confidence level of mean in   annual_income cause it cross the 0 in xline. 
+## Both fail so try nonparametric test
+```{r}
+table(df_cleaned$homeownership)
+
+# Since no values for 'ANY' we remove it.
+df_cleaned <- df_cleaned[df_cleaned$homeownership != "ANY", ]
+kw <- kruskal.test(annual_income ~ homeownership, data = df_cleaned)
+print(kw)
+# Assumption:
+  # 1. Independence
+  # 2. Ordinal or continuous scale 
+  # 3. Same‐shaped distributions under H0
+
+boxplot(annual_income ~ homeownership, data = df_cleaned,
+        main = "Boxplot of Response by Group",
+        xlab = "Group", ylab = "Response")
+
+# By using two plots we can indicate each group have the same-shaped distributions, 
+# so that differences in ranks reflect shifts in location (medians) only.
+```
+
+### Interpretation: Becasue the residuals didn't follow normalityu so we can't use the result from ANOVA. 
+### We choose to use  nonparametric Kruskal–Wallis. By using two plots we can said that the group have the same shape of distribution
 
 
 # Question 2: Did the people with verified income have lower interest_rate
